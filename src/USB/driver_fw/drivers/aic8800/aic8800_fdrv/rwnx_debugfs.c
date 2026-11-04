@@ -274,7 +274,6 @@ static int rwnx_dbgfs_txq(char *buf, size_t size, struct rwnx_txq *txq, int type
 
     res = scnprintf(&buf[idx], size, "\n");
     idx += res;
-    size -= res;
 
     return idx;
 }
@@ -396,7 +395,6 @@ static int rwnx_dbgfs_txq_vif(char *buf, size_t size, struct rwnx_vif *rwnx_vif,
         if (rwnx_vif->sta.ap) {
             res = rwnx_dbgfs_txq_sta(&buf[idx], size, rwnx_vif->sta.ap, rwnx_hw);
             idx += res;
-            size -= res;
         }
     }
 
@@ -1247,27 +1245,43 @@ static ssize_t rwnx_dbgfs_regdbg_write(struct file *file,
 	char buf[32];
 	u32 addr,val, oper;
 	size_t len = min_t(size_t, count, sizeof(buf) - 1);
-    	struct dbg_mem_read_cfm mem_read_cfm;
-    	int ret;
+	struct dbg_mem_read_cfm mem_read_cfm;
+	int ret;
 
 	if (copy_from_user(buf, user_buf, len))
 		return -EFAULT;
 
-    	buf[len] = '\0';
+	buf[len] = '\0';
 
 	if (sscanf(buf, "%x %x %x" , &oper, &addr, &val ) > 0)
 		printk("addr=%x, val=%x,oper=%d\n", addr, val, oper);
 
-    	if(oper== 0) {
+	if(oper== 0) {
 		ret = rwnx_send_dbg_mem_read_req(priv, addr, &mem_read_cfm);
-        	printk("[0x%x] = [0x%x]\n", mem_read_cfm.memaddr, mem_read_cfm.memdata);
+		if (ret) {
+			printk("rd fail, ret=%d\n", ret);
+			return -1;
+		}
+		printk("[0x%x] = [0x%x]\n", mem_read_cfm.memaddr, mem_read_cfm.memdata);
 	} else if (oper == 1) {
 		ret = rwnx_send_dbg_mem_read_req(priv, addr, &mem_read_cfm);
+		if (ret) {
+			printk("rd fail, ret=%d\n", ret);
+			return -1;
+		}
 		printk("before write : [0x%x] = [0x%x]\n", mem_read_cfm.memaddr, mem_read_cfm.memdata);
 		ret = rwnx_send_dbg_mem_block_write_req(priv, addr, 4, &val);
+		if (ret) {
+			printk("blk wr fail, ret=%d\n", ret);
+			return -1;
+		}
 		ret = rwnx_send_dbg_mem_read_req(priv, addr, &mem_read_cfm);
+		if (ret) {
+			printk("rd fail, ret=%d\n", ret);
+			return -1;
+		}
 		printk("after write : [0x%x] = [0x%x]\n", mem_read_cfm.memaddr, mem_read_cfm.memdata);
-    	}
+	}
 
 	return count;
 }
@@ -1279,9 +1293,8 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_write(struct file *file,
 			size_t count, loff_t *ppos)
 {
 	struct rwnx_hw *priv = file->private_data;
-	char buf[64];
+	char buf[128];
 	int32_t addr[14];
-    int32_t addr_out[12];
 	u32_l hwconfig_id;
 	size_t len = min_t(size_t,count,sizeof(buf)-1);
 	int ret;
@@ -1295,7 +1308,21 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_write(struct file *file,
 
 	buf[len] = '\0';
 	ret = sscanf(buf, "%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x",
-                            &hwconfig_id, &addr[0], &addr[1], &addr[2], &addr[3], &addr[4], &addr[5], &addr[6], &addr[7], &addr[8], &addr[9], &addr[10], &addr[11], &addr[12], &addr[13]);
+                            &hwconfig_id,
+                            (u32_l *)&addr[0],
+                            (u32_l *)&addr[1],
+                            (u32_l *)&addr[2],
+                            (u32_l *)&addr[3],
+                            (u32_l *)&addr[4],
+                            (u32_l *)&addr[5],
+                            (u32_l *)&addr[6],
+                            (u32_l *)&addr[7],
+                            (u32_l *)&addr[8],
+                            (u32_l *)&addr[9],
+                            (u32_l *)&addr[10],
+                            (u32_l *)&addr[11],
+                            (u32_l *)&addr[12],
+                            (u32_l *)&addr[13]);
 	if(ret > 15) {
 		printk("param error > 15\n");
 	} else {
@@ -1348,6 +1375,7 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_write(struct file *file,
                 if (ret != 1) {
                     printk("param error != 1\n");
                 } else {
+                    int32_t addr_out[12];
                     ret = rwnx_send_vendor_hwconfig_req(priv, hwconfig_id, addr, addr_out);
                     printk("CHIP_TEMP_GET_REQ degree=%d\n", addr_out[0]);
                 }
@@ -1373,7 +1401,6 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_write(struct file *file,
     struct rwnx_hw *priv = file->private_data;
     char buf[64];
     int32_t addr[12];
-    int32_t addr_out[12];
     u32_l swconfig_id;
     size_t len = min_t(size_t, count, sizeof(buf) - 1);
     int ret;
@@ -1384,10 +1411,14 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_write(struct file *file,
     }
 
     buf[len] = '\0';
-    ret = sscanf(buf, "%x %x %x", &swconfig_id, &addr[0], &addr[1]);
+    ret = sscanf(buf, "%x %x %x",
+        &swconfig_id,
+        (u32_l *)&addr[0],
+        (u32_l *)&addr[1]);
     if (ret > 3) {
         printk("param error > 3\n");
     } else {
+        int32_t addr_out[12];
         switch (swconfig_id)
         {
             case 0: // BCN_CFG_REQ
@@ -1469,7 +1500,6 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_x2_write(struct file *file,
 	struct rwnx_hw *priv = file->private_data;
 	char buf[64];
 	int32_t addr[14];
-    int32_t addr_out[12];
 	u32_l hwconfig_id;
 	size_t len = min_t(size_t,count,sizeof(buf)-1);
 	int ret;
@@ -1483,10 +1513,25 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_x2_write(struct file *file,
 
 	buf[len] = '\0';
 	ret = sscanf(buf, "%x %x %x %x %x %x %x %x %x %x %x %x %x %x %x",
-                            &hwconfig_id, &addr[0], &addr[1], &addr[2], &addr[3], &addr[4], &addr[5], &addr[6], &addr[7], &addr[8], &addr[9], &addr[10], &addr[11], &addr[12], &addr[13]);
+                            &hwconfig_id,
+                            (u32_l *)&addr[0],
+                            (u32_l *)&addr[1],
+                            (u32_l *)&addr[2],
+                            (u32_l *)&addr[3],
+                            (u32_l *)&addr[4],
+                            (u32_l *)&addr[5],
+                            (u32_l *)&addr[6],
+                            (u32_l *)&addr[7],
+                            (u32_l *)&addr[8],
+                            (u32_l *)&addr[9],
+                            (u32_l *)&addr[10],
+                            (u32_l *)&addr[11],
+                            (u32_l *)&addr[12],
+                            (u32_l *)&addr[13]);
 	if(ret > 15) {
 		printk("param error > 15\n");
 	} else {
+        int32_t addr_out[12];
 		switch(hwconfig_id)
 		    {
 		    case 0:
@@ -1580,7 +1625,6 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_x2_write(struct file *file,
     struct rwnx_hw *priv = file->private_data;
     char buf[64];
     int32_t addr[12];
-    int32_t addr_out[12];
     u32_l swconfig_id;
     size_t len = min_t(size_t, count, sizeof(buf) - 1);
     int ret;
@@ -1591,10 +1635,14 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_x2_write(struct file *file,
     }
 
     buf[len] = '\0';
-    ret = sscanf(buf, "%x %x %x", &swconfig_id, &addr[0], &addr[1]);
+    ret = sscanf(buf, "%x %x %x",
+        &swconfig_id,
+        (u32_l *)&addr[0],
+        (u32_l *)&addr[1]);
     if (ret > 3) {
         printk("param error > 3\n");
     } else {
+        int32_t addr_out[12];
         switch (swconfig_id)
         {
             case 0: // BCN_CFG_REQ
@@ -2335,11 +2383,11 @@ static ssize_t rwnx_dbgfs_last_rx_read(struct file *file,
             union rwnx_rate_ctrl_info rate_config;
             int percent = (rate_stats->table[i] * 1000) / rate_stats->cpt;
             int p;
-            int ru_size;
+            int ru_size_tmp;
 
-            idx_to_rate_cfg(i, &rate_config, &ru_size);
+            idx_to_rate_cfg(i, &rate_config, &ru_size_tmp);
             len += print_rate_from_cfg(&buf[len], bufsz - len,
-                                       rate_config.value, NULL, ru_size);
+                                       rate_config.value, NULL, ru_size_tmp);
             p = (percent * hist_len) / 1000;
             len += scnprintf(&buf[len], bufsz - len, ": %6d(%3d.%1d%%)%.*s\n",
                              rate_stats->table[i],

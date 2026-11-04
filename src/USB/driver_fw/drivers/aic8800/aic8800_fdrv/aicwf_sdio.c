@@ -527,7 +527,7 @@ static void aicwf_sdio_bus_stop(struct device *dev)
 
     aicwf_sdio_pwrctl_timer(sdiodev, 0);
     if(timer_pending(&sdiodev->rwnx_hw->p2p_alive_timer)){
-        ret = del_timer(&sdiodev->rwnx_hw->p2p_alive_timer);}
+        del_timer(&sdiodev->rwnx_hw->p2p_alive_timer);}
     sdio_dbg("%s\n",__func__);
     if (sdiodev->pwrctl_tsk) {
         complete(&sdiodev->pwrctrl_trgg);
@@ -604,7 +604,7 @@ static int aicwf_sdio_tx_msg(struct aic_sdio_dev *sdiodev)
         len = payload_len;
     }
 	buffer_cnt = aicwf_sdio_flow_ctrl(sdiodev);
-	while ((buffer_cnt <= 0 || (buffer_cnt > 0 && len > (buffer_cnt * BUFFER_SIZE))) && retry < 5) {
+	while ((buffer_cnt <= 0 || (len > (buffer_cnt * BUFFER_SIZE))) && (retry < 5)) {
 		retry++;
 		buffer_cnt = aicwf_sdio_flow_ctrl(sdiodev);
 	}
@@ -1031,17 +1031,24 @@ static void aicwf_sdio_enq_rxpkt(struct aic_sdio_dev *sdiodev, struct sk_buff *p
 
 void aicwf_sdio_hal_irqhandler(struct sdio_func *func)
 {
-    struct aicwf_bus *bus_if = dev_get_drvdata(&func->dev);
-    struct aic_sdio_dev *sdiodev = bus_if->bus_priv.sdio;
+    struct aicwf_bus *bus_if;
+    struct aic_sdio_dev *sdiodev;
     u8 intstatus = 0;
     u8 byte_len = 0;
     struct sk_buff *pkt = NULL;
     int ret;
 
-    if (!bus_if || bus_if->state == BUS_DOWN_ST) {
+    // Get the pointer first
+    bus_if = dev_get_drvdata(&func->dev);
+
+    // Check null pointer before dereferencing
+    if (!bus_if || (bus_if->state == BUS_DOWN_ST)) {
         sdio_err("bus err\n");
         return;
     }
+
+    // Now safely use the pointer
+    sdiodev = bus_if->bus_priv.sdio;
 
     ret = aicwf_sdio_readb(sdiodev, SDIOWIFI_BLOCK_CNT_REG, &intstatus);
     while(ret || (intstatus & SDIO_OTHER_INTERRUPT)) {

@@ -79,3 +79,11 @@ clean:
 	cd aic_load_fw/;make clean;cd ..
 	cd aic8800_fdrv/;make clean;cd ..
 	rm -rf modules.order Module.symvers .modules.order.cmd .Module.symvers.cmd .tmp_versions/
+
+cppcheck:
+	mkdir -p ./cppcheck-report/html
+	cppcheck --enable=all --inconclusive --force --std=c++11 --xml --xml-version=2 ./ 2> ./cppcheck-report/result.xml
+	python3 ../../../../tools/cppcheck/htmlreport/cppcheck-htmlreport --file ./cppcheck-report/result.xml --report-dir ./cppcheck-report/html --source-dir ./
+
+clean-cppcheck:
+	rm -rfv ./cppcheck-report

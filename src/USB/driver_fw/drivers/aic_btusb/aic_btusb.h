@@ -47,7 +47,7 @@
 If you need to use the feature of waking up with BLE during STR Suspend sleep, please enable this macro.
 */
 
-//#define CONFIG_BT_WAKEUP_IN_PM
+//CONFIG_BT_WAKEUP_IN_PM  // open it in Makefile.
 #endif
 /* Some Android system may use standard Linux kernel, while
  * standard Linux may also implement early suspend feature.
@@ -655,6 +655,8 @@ typedef struct {
 #define HCI_VSC_SET_ADFILTER_PT_CMD             0xFDAB
 #define HCI_VSC_RESET_ADFILTER_PROCESS_PT_CMD   0xFDAC
 #define HCI_VSC_WF_START_APP_CMD                0xFDAD
+#define HCI_VSC_SET_ADFILTER_WAVE_PT_CMD        0xFDAE
+
 #define TRUE            1
 #define FALSE            0
 #define CMD_HDR_LEN        sizeof(struct hci_command_hdr)
@@ -688,6 +690,7 @@ enum AIC_DC_SUBID{
 enum AIC_D80N_SUBID{
     D80N_U01 = 0,
     D80N_U02,
+    D80N_U02C,
 };
 
 struct aicbt_firmware {
@@ -741,6 +744,15 @@ const struct aicbt_firmware fw_8800d80n[] = {
         .wf_cinit      = "fmacfw_cinit_8800d80n_u02.bin",
         .wf_btusb      = "fmacfw_btusb_8800d80n_u02.bin",
     },
+    [D80N_U02C] = {
+        .desc		   = "aic8800d80n u02c bt patch",
+        .bt_adid	   = "fw_adid_8800d80n_u02c.bin",
+        .bt_patch	   = "fw_patch_8800d80n_u02c.bin",
+        .bt_table	   = "fw_patch_table_8800d80n_u02c.bin",
+        .bt_ext_patch  = "fw_patch_8800d80n_u02c_ext",
+        .wf_cinit	   = "fmacfw_cinit_8800d80n_u02c.bin",
+        .wf_btusb	   = "fmacfw_btusb_8800d80n_u02c.bin",
+    },
 };
 
 const struct aicbt_firmware fw_8800d80n_rf[] = {
@@ -759,6 +771,15 @@ const struct aicbt_firmware fw_8800d80n_rf[] = {
         .bt_ext_patch  = "fw_patch_8800d80n_rf_u02_ext",
         .wf_cinit      = "fmacfw_cinit_8800d80n_u02.bin",
         .wf_btusb      = "fmacfw_btusb_8800d80n_u02.bin",
+    },
+    [D80N_U02C] = {
+        .desc          = "aic8800d80n u02c bt patch",
+        .bt_adid       = "fw_adid_8800d80n_rf_u02c.bin",
+        .bt_patch      = "fw_patch_8800d80n_rf_u02c.bin",
+        .bt_table      = "fw_patch_table_8800d80n_rf_u02c.bin",
+        .bt_ext_patch  = "fw_patch_8800d80n_rf_u02c_ext",
+        .wf_cinit      = "fmacfw_cinit_8800d80n_u02c.bin",
+        .wf_btusb      = "fmacfw_btusb_8800d80n_u02c.bin",
     },
 };
 
@@ -783,6 +804,7 @@ struct fw_status {
 #define MAX_AD_FILTER_NUM        4// Max AD Filter num
 #define MAX_GPIO_TRIGGER_NUM     2// Max user config num of gpio
 #define MAX_ROLE_COMNO_IDX_NUM   2// Max num of ad role type combo,form( enum gpio_combo_idx) 
+#define MAX_AD_FILTER_WAVE_NUM_MAX 8
 
 #define AD_ROLE_FLAG         0x0f
 #define ROLE_COMBO_IDX_FLAG  0xf0
@@ -820,6 +842,22 @@ struct ble_wakeup_param_t {
     uint32_t gpio_dft_lvl[MAX_GPIO_TRIGGER_NUM];
     struct wakeup_ad_data_filter ad_filter[MAX_AD_FILTER_NUM];
 };
+
+
+typedef struct {
+    uint32_t ad_data_mask;
+    uint8_t gpio_trigger_idx;
+    uint8_t ad_role;//from enum ad_role_type 
+    uint8_t ad_len;
+    uint8_t ad_type;
+    uint8_t ad_data[31];
+	uint16_t ad_filter_gpio_waveform;
+}wakeup_ad_filter_wave_t;
+
+typedef struct {
+    wakeup_ad_filter_wave_t ad_filter_wave[MAX_AD_FILTER_WAVE_NUM_MAX];
+}ble_wakeup_wave_param_t;
+
 
 /// Structure containing the parameters of the @ref DBG_START_APP_REQ message.
 struct wf_start_app_param

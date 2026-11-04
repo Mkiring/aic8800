@@ -344,19 +344,19 @@ static inline u8 rwnx_txq_vif_get_status(struct rwnx_vif *rwnx_vif)
     return (txq->status & (RWNX_TXQ_STOP_CHAN | RWNX_TXQ_STOP_VIF_PS));
 }
 
-void rwnx_txq_vif_init(struct rwnx_hw * rwnx_hw, struct rwnx_vif *vif,
+void rwnx_txq_vif_init(struct rwnx_hw * rwnx_hw, struct rwnx_vif *rwnx_vif,
                        u8 status);
-void rwnx_txq_vif_deinit(struct rwnx_hw * rwnx_hw, struct rwnx_vif *vif);
+void rwnx_txq_vif_deinit(struct rwnx_hw * rwnx_hw, struct rwnx_vif *rwnx_vif);
 void rwnx_txq_sta_init(struct rwnx_hw * rwnx_hw, struct rwnx_sta *rwnx_sta,
                        u8 status);
 void rwnx_txq_sta_deinit(struct rwnx_hw * rwnx_hw, struct rwnx_sta *rwnx_sta);
 #ifdef CONFIG_RWNX_FULLMAC
 void rwnx_txq_unk_vif_init(struct rwnx_vif *rwnx_vif);
-void rwnx_txq_unk_vif_deinit(struct rwnx_vif *vif);
+void rwnx_txq_unk_vif_deinit(struct rwnx_vif *rwnx_vif);
 void rwnx_txq_offchan_init(struct rwnx_vif *rwnx_vif);
 void rwnx_txq_offchan_deinit(struct rwnx_vif *rwnx_vif);
 void rwnx_txq_tdls_vif_init(struct rwnx_vif *rwnx_vif);
-void rwnx_txq_tdls_vif_deinit(struct rwnx_vif *vif);
+void rwnx_txq_tdls_vif_deinit(struct rwnx_vif *rwnx_vif);
 void rwnx_txq_tdls_sta_start(struct rwnx_vif *rwnx_vif, u16 reason,
                              struct rwnx_hw *rwnx_hw);
 void rwnx_txq_tdls_sta_stop(struct rwnx_vif *rwnx_vif, u16 reason,
@@ -368,15 +368,15 @@ void rwnx_txq_add_to_hw_list(struct rwnx_txq *txq);
 void rwnx_txq_del_from_hw_list(struct rwnx_txq *txq);
 void rwnx_txq_stop(struct rwnx_txq *txq, u16 reason);
 void rwnx_txq_start(struct rwnx_txq *txq, u16 reason);
-void rwnx_txq_vif_start(struct rwnx_vif *vif, u16 reason,
+void rwnx_txq_vif_start(struct rwnx_vif *rwnx_vif, u16 reason,
                         struct rwnx_hw *rwnx_hw);
-void rwnx_txq_vif_stop(struct rwnx_vif *vif, u16 reason,
+void rwnx_txq_vif_stop(struct rwnx_vif *rwnx_vif, u16 reason,
                        struct rwnx_hw *rwnx_hw);
 
 #ifdef CONFIG_RWNX_FULLMAC
-void rwnx_txq_sta_start(struct rwnx_sta *sta, u16 reason,
+void rwnx_txq_sta_start(struct rwnx_sta *rwnx_sta, u16 reason,
                         struct rwnx_hw *rwnx_hw);
-void rwnx_txq_sta_stop(struct rwnx_sta *sta, u16 reason,
+void rwnx_txq_sta_stop(struct rwnx_sta *rwnx_sta, u16 reason,
                        struct rwnx_hw *rwnx_hw);
 void rwnx_txq_offchan_start(struct rwnx_hw *rwnx_hw);
 void rwnx_txq_sta_switch_vif(struct rwnx_sta *sta, struct rwnx_vif *old_vif,

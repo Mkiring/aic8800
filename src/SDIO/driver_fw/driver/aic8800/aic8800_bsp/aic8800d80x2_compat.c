@@ -2,12 +2,13 @@
 #include "aic_bsp_driver.h"
 
 #define RAM_FMAC_FW_ADDR_8800D80X2           0x128000
-#define RAM_FMAC_RF_FW_ADDR_8800D80X2        0x120000
+#define RAM_FMAC_RF_FW_ADDR_8800D80X2        0x128000
 
 #define USER_PWROFST_COVER_CALIB_FLAG   (0x01U << 0)
 #define USER_CHAN_MAX_TXPWR_EN_FLAG     (0x01U << 1)
 #define USER_APM_PRBRSP_OFFLOAD_DISABLE_FLAG    (0x01U << 3)
 #define USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG     (0x01U << 4)
+#define USER_CAPA_CALIB_DISABLE_FLAG    (0x01U << 7)
 #define USER_RF_WITH_SAW_EN_FLAG        (0x01U << 10)
 #define USER_SETCH_LOFT_CALIB_EN_FLAG   (0x01U << 11)
 #define USER_SETCH_RXDC_CALIB_EN_FLAG   (0x01U << 12)
@@ -18,9 +19,18 @@
      USER_SETCH_LOFT_CALIB_EN_FLAG)
 
 #define CFG_USER_PWROFST_COVER_CALIB_EN     (1)
-#define CFG_USER_CHAN_MAX_TXPWR_EN          (defined(CONFIG_POWER_LIMIT))
-#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (defined(CONFIG_PRBREQ_REPORT))
+#ifdef CONFIG_POWER_LIMIT
+#define CFG_USER_CHAN_MAX_TXPWR_EN 1
+#else
+#define CFG_USER_CHAN_MAX_TXPWR_EN 0
+#endif
+#ifdef CONFIG_PRBREQ_REPORT
+#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE 1
+#else
+#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE 0
+#endif
 #define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
+#define CFG_USER_CAPA_CALIB_DISABLE         (1)
 #define CFG_USER_RF_WITH_SAW_EN             (0)
 #define CFG_USER_SETCH_LOFT_CALIB_EN        (1)
 #define CFG_USER_SETCH_RXDC_CALIB_EN        (0)
@@ -64,6 +74,9 @@ u32 patch_tbl_d80x2[][2] =
             #endif
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
+            #endif
+            #if CFG_USER_CAPA_CALIB_DISABLE
+            USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
             #if CFG_USER_RF_WITH_SAW_EN
             USER_RF_WITH_SAW_EN_FLAG |

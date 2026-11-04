@@ -30,7 +30,7 @@ int aicwf_set_rf_config_8800d80(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_
 	if ((ret = rwnx_send_rf_calib_req(rwnx_hw, cfm))) {
 		return -1;
 	}
-	return 0 ;
+	return ret;
 }
 
 
@@ -40,7 +40,12 @@ int	rwnx_plat_userconfig_load_8800d80(struct rwnx_hw *rwnx_hw){
     char *filename = FW_USERCONFIG_NAME_8800D80;
 
 #ifndef ANDROID_PLATFORM
-            sprintf(aic_fw_path, "%s/%s", aic_fw_path, "aic8800D80");
+            {
+                char temp_path[200];
+                snprintf(temp_path, sizeof(temp_path), "%s/%s", aic_fw_path, "aic8800D80");
+                strncpy(aic_fw_path, temp_path, 199);
+                aic_fw_path[199] = '\0';
+            }
 #endif
 
     AICWFDBG(LOGINFO, "userconfig file path:%s \r\n", filename);
@@ -113,7 +118,6 @@ int system_config_8800d80(struct rwnx_hw *rwnx_hw)
 	AICWFDBG(LOGINFO, "chip_id=%x, chip_mcu_id = %d\n", chip_id, chip_mcu_id);
 	if (testmode == 1 && (IS_CHIP_ID_H()))
 	{
-		struct dbg_mem_read_cfm rd_mem_addr_cfm;
 		ret = rwnx_send_dbg_mem_read_req(rwnx_hw, read_mem_addr, &rd_mem_addr_cfm);
 		AICWFDBG(LOGINFO, "%s 0x%08x=0x%08x\n", __func__, read_mem_addr, rd_mem_addr_cfm.memdata);
 		if (ret) {

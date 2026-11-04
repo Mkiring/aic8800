@@ -134,7 +134,7 @@ void aicwf_nl_send_sta_rpt_msg(struct rwnx_vif *rwnx_vif, struct rwnx_sta *sta);
 void aicwf_nl_send_frame_rpt_msg(struct rwnx_vif *rwnx_vif, u16_l frame_type, u8_l *sa, s8_l rssi);
 void aicwf_nl_send_time_tick_msg(struct rwnx_vif *rwnx_vif);
 void aicwf_nl_hook(struct rwnx_vif *rwnx_vif, u8_l band, u8_l iface_id);
-void aicwf_nl_hook_deinit(u8_l band, u8_l ssid);
+void aicwf_nl_hook_deinit(u8_l band, u8_l iface_id);
 void aicwf_nl_init(void);
 void aicwf_nl_deinit(void);
 void aicwf_wlan_manager_recv_msg(struct b_nl_message *msg);

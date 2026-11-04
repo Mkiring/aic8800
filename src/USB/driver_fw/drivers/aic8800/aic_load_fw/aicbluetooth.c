@@ -265,13 +265,13 @@ static int aic_load_firmware(u32 ** fw_buf, const char *name, struct device *dev
 
 
 	ret = request_firmware(&fw, name, NULL);
-	
+
 	if (ret < 0) {
 		printk("Load %s fail\n", name);
 		release_firmware(fw);
 		return -1;
 	}
-	
+
 	size = fw->size;
 	dst = (u32 *)fw->data;
 
@@ -285,16 +285,16 @@ static int aic_load_firmware(u32 ** fw_buf, const char *name, struct device *dev
 	buffer = vmalloc(size);
 	memset(buffer, 0, size);
 	memcpy(buffer, dst, size);
-	
+
 	*fw_buf = buffer;
 
 	MD5Init(&md5);
 	MD5Update(&md5, (unsigned char *)buffer, size);
 	MD5Final(&md5, decrypt);
 	printk(MD5PINRT, MD5(decrypt));
-	
+
 	release_firmware(fw);
-	
+
 	return size;
 #else
     void *buffer=NULL;
@@ -372,7 +372,6 @@ static int aic_load_firmware(u32 ** fw_buf, const char *name, struct device *dev
 
     /* start to read from firmware file */
     buffer = vmalloc(size);
-    memset(buffer, 0, size);
     if(!buffer){
             *fw_buf=NULL;
             __putname(path);
@@ -380,6 +379,7 @@ static int aic_load_firmware(u32 ** fw_buf, const char *name, struct device *dev
             fp=NULL;
             return -1;
     }
+    memset(buffer, 0, size);
 
 
     #if LINUX_VERSION_CODE > KERNEL_VERSION(4, 13, 16)
@@ -535,7 +535,7 @@ int rwnx_plat_m2d_flash_ota_android(struct aic_usb_dev *usbdev, char *filename)
 
 	/*send info first*/
 	err = rwnx_send_dbg_mem_block_write_req(usbdev, AIC_M2D_OTA_INFO_ADDR, 4, (u32 *)&size);
-	
+
 	/*send data first*/
     if (size > 1024) {// > 1KB data
         for (i = 0; i < (size - 1024); i += 1024) {//each time write 1KB
@@ -649,7 +649,7 @@ int rwnx_plat_m2d_flash_ota_check(struct aic_usb_dev *usbdev, char *filename)
 		memcpy((u8 *)flash_sdk_ver,(u8 *)flash_ver,64);
         memcpy((u8 *)saved_sdk_ver,(u8 *)flash_sdk_ver,64);
 		printk("flash SDK Version: %s\r\n\r\n", flash_sdk_ver);
-				
+
 		drv_code_start_addr = dst[driver_code_start_idx];
 		drv_sdk_ver_addr = dst[driver_sdk_ver_idx];
 
@@ -672,7 +672,7 @@ int rwnx_plat_m2d_flash_ota_check(struct aic_usb_dev *usbdev, char *filename)
 		} else {
 			return -1;
 		}
-		
+
 		if(!strcmp(m2d_sdk_ver,flash_sdk_ver)){
 			printk("######## m2d %s flash is not need upgrade\r\n", filename);
 			return -1;
@@ -684,7 +684,7 @@ int rwnx_plat_m2d_flash_ota_check(struct aic_usb_dev *usbdev, char *filename)
 
 	/*send info first*/
 	err = rwnx_send_dbg_mem_block_write_req(usbdev, AIC_M2D_OTA_INFO_ADDR, 4, (u32 *)&size);
-	
+
 	/*send data first*/
     if (size > 1024) {// > 1KB data
         for (i = 0; i < (size - 1024); i += 1024) {//each time write 1KB
@@ -808,7 +808,7 @@ uint32_t rwnx_atoli(char *value){
 	int temp_len = 0;
 	int i = 0;
 	uint32_t result = 0;
-	
+
 	temp_len = strlen(value);
 
 	for(i = 0;i < temp_len; i++){
@@ -820,7 +820,7 @@ uint32_t rwnx_atoli(char *value){
 	}
 
 	//printk("%s len:%d \r\n", __func__, len);
-	
+
 	for(i = 0; i < len; i++){
 		result = result * 16;
 		if(value[i] >= 48 && value[i] <= 57){
@@ -831,7 +831,7 @@ uint32_t rwnx_atoli(char *value){
 			result += (value[i] - 97) + 10;
 		}
 	}
-	
+
 	return result;
 }
 
@@ -871,7 +871,7 @@ void get_fw_path(char* fw_path){
 	}else{
 		memcpy(fw_path, aic_default_fw_path, strlen(aic_default_fw_path));
 	}
-} 
+}
 
 void set_testmode(int val){
 	testmode = val;
@@ -977,7 +977,7 @@ void get_userconfig_txpwr_ofst(txpwr_ofst_conf_t *txpwr_ofst){
 
 EXPORT_SYMBOL(get_userconfig_txpwr_ofst);
 
-void rwnx_plat_userconfig_set_value(char *command, char *value){	
+void rwnx_plat_userconfig_set_value(char *command, char *value){
 	//TODO send command
 	printk("%s:command=%s value=%s \r\n", __func__, command, value);
 	if(!strcmp(command, "enable")){
@@ -1131,7 +1131,6 @@ int aicbt_patch_table_free(struct aicbt_patch_table *head)
 		vfree(p);
 		p = n;
 	}
-	head = NULL;
 	return 0;
 }
 
@@ -1206,6 +1205,7 @@ struct aicbt_patch_table *aicbt_patch_table_alloc(struct aic_usb_dev *usbdev,con
 
 err:
 	aicbt_patch_table_free(head);
+	printk("err ret: %d\n", ret);
 	if (rawdata)
 		vfree(rawdata);
 	return NULL;
@@ -1219,7 +1219,7 @@ struct aicbsp_info_t aicbsp_info = {
 
 
 static struct aicbt_info_t aicbt_info[] = {
-    {   
+    {
         .btmode        = AICBT_BTMODE_DEFAULT,
         .btport        = AICBT_BTPORT_DEFAULT,
         .uart_baud     = AICBT_UART_BAUD_DEFAULT,
@@ -1373,7 +1373,7 @@ void aicbt_parse_config(struct aic_usb_dev *usbdev, const char *filename)
     tag_ptr = aicbt_find_tag((char*)dst, size, "TXPWR_LVL=", strlen("0x6F2F"));
     if (tag_ptr) {
         if (sscanf(tag_ptr, "%08x", &tmp_val) == 1) {
-            if (tmp_val >= 0 || tmp_val <= 0X7F7F) {
+            if ((tmp_val >= 0) && (tmp_val <= 0X7F7F)) {
                 aicbt_info[usbdev->chipid].txpwr_lvl = tmp_val;
             } else {
                 aicbt_info[usbdev->chipid].txpwr_lvl = AICBT_TXPWR_LVL_DEFAULT;
@@ -1450,37 +1450,37 @@ int aicbt_patch_info_unpack(struct aicbt_patch_info_t *patch_info, struct aicbt_
     uint8_t *patch_info_array = (uint8_t*)patch_info;
     int base_len = 0;
     int memcpy_len = 0;
-    
+
     if (AICBT_PT_INF == head_t->type) {
         base_len = ((offsetof(struct aicbt_patch_info_t,  ext_patch_nb_addr) - offsetof(struct aicbt_patch_info_t,  adid_addrinf) )/sizeof(uint32_t))/2;
         AICWFDBG(LOGDEBUG, "%s head_t->len:%d base_len:%d \r\n", __func__, head_t->len, base_len);
 
         if (head_t->len > base_len){
             patch_info->info_len = base_len;
-            memcpy_len = patch_info->info_len + 1;//include ext patch nb     
+            memcpy_len = patch_info->info_len + 1;//include ext patch nb
         } else{
             patch_info->info_len = head_t->len;
             memcpy_len = patch_info->info_len;
         }
 	head_t->len = patch_info->info_len;
-        AICWFDBG(LOGDEBUG, "%s memcpy_len:%d \r\n", __func__, memcpy_len);   
+        AICWFDBG(LOGDEBUG, "%s memcpy_len:%d \r\n", __func__, memcpy_len);
 
         if (patch_info->info_len == 0)
             return 0;
-       
-        memcpy(((patch_info_array) + sizeof(patch_info->info_len)), 
-            head_t->data, 
+
+        memcpy(((patch_info_array) + sizeof(patch_info->info_len)),
+            head_t->data,
             memcpy_len * sizeof(uint32_t) * 2);
-        AICWFDBG(LOGDEBUG, "%s adid_addrinf:%x addr_adid:%x \r\n", __func__, 
+        AICWFDBG(LOGDEBUG, "%s adid_addrinf:%x addr_adid:%x \r\n", __func__,
             ((struct aicbt_patch_info_t *)patch_info_array)->adid_addrinf,
             ((struct aicbt_patch_info_t *)patch_info_array)->addr_adid);
 
         if (patch_info->ext_patch_nb > 0){
             int index = 0;
             patch_info->ext_patch_param = (uint32_t *)(head_t->data + ((memcpy_len) * 2));
-            
+
             for(index = 0; index < patch_info->ext_patch_nb; index++){
-                AICWFDBG(LOGDEBUG, "%s id:%x addr:%x \r\n", __func__, 
+                AICWFDBG(LOGDEBUG, "%s id:%x addr:%x \r\n", __func__,
                     *(patch_info->ext_patch_param + (index * 2)),
                     *(patch_info->ext_patch_param + (index * 2) + 1));
             }

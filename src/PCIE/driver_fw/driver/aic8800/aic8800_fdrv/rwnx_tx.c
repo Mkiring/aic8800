@@ -1632,8 +1632,10 @@ netdev_tx_t rwnx_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	desc->host.staid = sta->sta_idx;
 	desc->host.tid = tid;
-	if (unlikely(rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP_VLAN))
+	if (unlikely(rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP_VLAN)) {
+		// printk("xmit valn vif_idx: %d\n", rwnx_vif->ap_vlan.master->vif_index);
 		desc->host.vif_idx = rwnx_vif->ap_vlan.master->vif_index;
+	}
 	else
 		desc->host.vif_idx = rwnx_vif->vif_index;
 	desc->host.flags = 0;
@@ -2088,6 +2090,8 @@ int rwnx_txdatacfm(void *pthis, void *host_id, u8 free)
 	int headroom;
 	//int peek_off = offsetof(struct rwnx_hw_txhdr, cfm);
 	//int peek_len = sizeof(((struct rwnx_hw_txhdr *)0)->cfm);
+	struct rwnx_vif *vif_tmp;
+	bool_l found = false;
 
 	txhdr = (struct rwnx_txhdr *)skb->data;
 	sw_txhdr = txhdr->sw_hdr;
@@ -2163,12 +2167,21 @@ int rwnx_txdatacfm(void *pthis, void *host_id, u8 free)
 		//printk("mgmt tx status cfm:%d, len=%d, skb:%p ,headroom = %d \n", rwnx_txst.acknowledged, sw_txhdr->frame_len, skb, sw_txhdr->headroom);
 		//printk("skb data[0] = %x ,data[1] = %x \n",skb->data[0],skb->data[1]);
 		/* Confirm transmission to CFG80211 */
-		cfg80211_mgmt_tx_status(&sw_txhdr->rwnx_vif->wdev,
+		list_for_each_entry(vif_tmp, &rwnx_hw->vifs, list) {
+			if (vif_tmp == sw_txhdr->rwnx_vif) {
+				found = true;
+				break;
+			}
+		}
+
+		if(found){
+			cfg80211_mgmt_tx_status(&sw_txhdr->rwnx_vif->wdev,
 								(unsigned long)skb,
 								(skb->data + sw_txhdr->headroom),
 								sw_txhdr->frame_len,
 								rwnx_txst.acknowledged,
 								GFP_ATOMIC);
+		}
 	} else if ((txq->idx != TXQ_INACTIVE) &&
 			   (rwnx_txst.retry_required || rwnx_txst.sw_retry_required)) {
 		//bool sw_retry = (rwnx_txst.sw_retry_required) ? true : false;

@@ -64,10 +64,10 @@ typedef struct {
 #define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (0)
 #endif
 #define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
-#define CFG_USER_LOFT_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_CAPA_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_PWR_CALIB_DISABLE_DISABLE  (0)
-#define CFG_USER_IPA_CALIB_DISABLE_DISABLE  (0)
+#define CFG_USER_LOFT_CALIB_DISABLE         (0)
+#define CFG_USER_CAPA_CALIB_DISABLE         (0)
+#define CFG_USER_PWR_CALIB_DISABLE          (0)
+#define CFG_USER_IPA_CALIB_DISABLE          (0)
 
 u32 patch_tbl_d80[][2] =
 {
@@ -96,16 +96,16 @@ u32 patch_tbl_d80[][2] =
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
             #endif
-            #if CFG_USER_LOFT_CALIB_DISABLE_DISABLE
+            #if CFG_USER_LOFT_CALIB_DISABLE
             USER_LOFT_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_CAPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_CAPA_CALIB_DISABLE
             USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_PWR_CALIB_DISABLE_DISABLE
+            #if CFG_USER_PWR_CALIB_DISABLE
             USER_PWR_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_IPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_IPA_CALIB_DISABLE
             USER_IPA_CALIB_DISABLE_FLAG |
             #endif
         0) & ~(
@@ -384,7 +384,7 @@ static int aicbt_ext_patch_data_load(struct aic_usb_dev *usb_dev, struct aicbt_p
             id = *(patch_info->ext_patch_param + (index * 2));
             addr = *(patch_info->ext_patch_param + (index * 2) + 1);
             memset(ext_patch_file_name, 0, sizeof(ext_patch_file_name));
-            sprintf(ext_patch_file_name,"%s%d.bin",
+            sprintf(ext_patch_file_name,"%s%u.bin",
                 filename,
                 id);
             AICWFDBG(LOGDEBUG, "%s ext_patch_file_name:%s ext_patch_id:%x ext_patch_addr:%x \r\n",
@@ -427,9 +427,6 @@ int aicfw_download_fw_8800d80(struct aic_usb_dev *usb_dev)
         return -1;
     }
 
-    if(head == NULL){
-        return -1;
-    }
     if (chip_id == CHIP_REV_U01) {
         patch_info.addr_adid = FW_RAM_ADID_BASE_ADDR_8800D80;
         patch_info.addr_patch = FW_RAM_PATCH_BASE_ADDR_8800D80;

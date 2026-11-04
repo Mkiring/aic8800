@@ -159,13 +159,16 @@ void aicwf_sdio_tx_netif_flowctrl(struct rwnx_hw *rwnx_hw, bool state)
 //module_param(interval, int, 0660);
 static int update_state(s8_l value, u8_l current_state)
 {
-	if (value > TEMP_THD_2)
+	s8_l thd_1 = g_rwnx_plat->sdiodev->tp_thd_1;
+	s8_l thd_2 = g_rwnx_plat->sdiodev->tp_thd_2;
+
+	if (value > thd_2)
 		return 2;
-	else if (value > (TEMP_THD_2 - BUFFERING_V2) && (current_state == 2))
+	else if (value > (thd_2 - BUFFERING_V2) && (current_state == 2))
 		return 2;
-	else if (value > TEMP_THD_1 && current_state != 2)
+	else if (value > thd_1 && current_state != 2)
 		return 1;
-	else if (value > (TEMP_THD_1 - BUFFERING_V1) && current_state == 1)
+	else if (value > (thd_1 - BUFFERING_V1) && current_state == 1)
 		return 1;
 	else if (current_state == 0)
 		return 0;
@@ -208,7 +211,7 @@ void aicwf_temp_ctrl(struct aic_sdio_dev *sdiodev)
 		}
 		return;
 	} else {
-		if (sdiodev->cur_temp > (TEMP_THD_1 - 8)) {
+		if (sdiodev->cur_temp > (sdiodev->tp_thd_1 - 8)) {
 			//if ((sdiodev->cur_temp > TEMP_THD_1 && sdiodev->cur_temp <= TEMP_THD_2) || (sdiodev->cur_stat == 1)) {
 			if (update_state(sdiodev->cur_temp, sdiodev->cur_stat) == 1) {
 				sdiodev->get_level = 1;
@@ -230,6 +233,7 @@ void aicwf_temp_ctrl(struct aic_sdio_dev *sdiodev)
 		if (sdiodev->cur_stat) {
 			AICWFDBG(LOGINFO, "reset cur_stat");
 			sdiodev->cur_stat = 0;
+			sdiodev->get_level = 0;
 		}
 
 		return;
@@ -272,17 +276,35 @@ static void aicwf_netif_timer(struct timer_list *t)
 void aicwf_temp_ctrl_worker(struct work_struct *work)
 {
 	struct rwnx_hw *rwnx_hw;
-	struct mm_set_vendor_swconfig_cfm cfm;
+	s8_l temp = 0;
 	struct aic_sdio_dev *sdiodev = container_of(work, struct aic_sdio_dev, tp_ctrl_work);
 	rwnx_hw = sdiodev->rwnx_hw;
 	//AICWFDBG(LOGINFO, "%s\n", __func__);
 
+	if (sdiodev->bus_if->state == BUS_DOWN_ST) {
+		AICWFDBG(LOGERROR, "%s bus down\n", __func__);
+		return;
+	}
+
+	spin_lock_bh(&sdiodev->tm_lock);
+	if (!sdiodev->tm_start) {
+		spin_unlock_bh(&sdiodev->tm_lock);
+		AICWFDBG(LOGERROR, "tp_timer should stop_1\n");
+		return;
+	}
+	spin_unlock_bh(&sdiodev->tm_lock);
+
 	rwnx_hw->started_jiffies = jiffies;
 
-	rwnx_send_get_temp_req(rwnx_hw, &cfm);
-	sdiodev->cur_temp = cfm.temp_comp_get_cfm.degree;
+	rwnx_send_get_temp_req(rwnx_hw, &temp);
+	sdiodev->cur_temp = temp;
 
-	mod_timer(&sdiodev->tp_ctrl_timer, jiffies + msecs_to_jiffies(TEMP_GET_INTERVAL));
+	spin_lock_bh(&sdiodev->tm_lock);
+	if (sdiodev->tm_start) {
+		mod_timer(&sdiodev->tp_ctrl_timer, jiffies + msecs_to_jiffies(TEMP_GET_INTERVAL));
+	} else
+		AICWFDBG(LOGERROR, "tp_timer should stop_2\n");
+	spin_unlock_bh(&sdiodev->tm_lock);
 
 	return;
 }
@@ -2418,6 +2440,7 @@ static int aicwf_sdio_bus_start(struct device *dev)
 
 
 	sdio_claim_host(sdiodev->func);
+#ifndef CONFIG_OOB //OOB no need register irqhandler
 #ifndef CONFIG_FDRV_NO_REG_SDIO
 	if(get_fdrv_no_reg_sdio())
 		set_irq_handler(aicwf_sdio_hal_irqhandler);
@@ -2425,6 +2448,7 @@ static int aicwf_sdio_bus_start(struct device *dev)
 		sdio_claim_irq(sdiodev->func, aicwf_sdio_hal_irqhandler);
 #else
     set_irq_handler(aicwf_sdio_hal_irqhandler);
+#endif
 #endif
 	if(sdiodev->chipid == PRODUCT_ID_AIC8800D80 ||
 		sdiodev->chipid == PRODUCT_ID_AIC8800D80N ||
@@ -2464,6 +2488,8 @@ module_param_named(bustx_thread_prio, bustx_thread_prio, int, 0644);
 int busrx_thread_prio = 1;
 module_param_named(busrx_thread_prio, busrx_thread_prio, int, 0644);
 //module_param(busrx_thread_prio, int, 0);
+int busirq_thread_prio = 42;
+module_param_named(busirq_thread_prio, busirq_thread_prio, int, 0644);
 #endif
 
 
@@ -2507,12 +2533,12 @@ int sdio_busirq_thread(void *data){
 #endif
 
 #ifdef CONFIG_TXRX_THREAD_PRIO
-        if (busrx_thread_prio > 0) {
+        if (busirq_thread_prio > 0) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0))
             sched_set_fifo_low(current);
 #else
             struct sched_param param;
-            param.sched_priority = (busrx_thread_prio - 1 < MAX_RT_PRIO)?busrx_thread_prio:(MAX_RT_PRIO-1);
+            param.sched_priority = (busirq_thread_prio - 1 < MAX_RT_PRIO)?busirq_thread_prio:(MAX_RT_PRIO-1);
             sched_setscheduler(current, SCHED_FIFO, &param);
 #endif
         }
@@ -3044,8 +3070,14 @@ void aicwf_sdio_release(struct aic_sdio_dev *sdiodev)
 	if (ret < 0) {
 		sdio_err("reg:%d write failed!\n", sdiodev->sdio_reg.intr_config_reg);
 	}
-	sdio_release_irq(sdiodev->func);
-	sdio_release_host(sdiodev->func);
+#ifndef CONFIG_FDRV_NO_REG_SDIO
+	if(get_fdrv_no_reg_sdio()){
+		
+	}else{
+		sdio_release_irq(sdiodev->func);
+	}	
+#endif	
+		sdio_release_host(sdiodev->func);
 #endif
 	if (sdiodev->dev)
 		aicwf_bus_deinit(sdiodev->dev);
@@ -3418,6 +3450,7 @@ void *aicwf_sdio_bus_init(struct aic_sdio_dev *sdiodev)
 	INIT_WORK(&sdiodev->tp_ctrl_work, aicwf_temp_ctrl_worker);
 	INIT_WORK(&sdiodev->netif_work, aicwf_netif_worker);
 	mod_timer(&sdiodev->tp_ctrl_timer, jiffies + msecs_to_jiffies(TEMP_GET_INTERVAL));
+	spin_lock_init(&sdiodev->tm_lock);
 	sdiodev->net_stop = false;;
 	sdiodev->on_off = true;
 	sdiodev->cur_temp = 0;
@@ -3426,6 +3459,9 @@ void *aicwf_sdio_bus_init(struct aic_sdio_dev *sdiodev)
 	sdiodev->interval_t1 = TMR_INTERVAL_1;
 	sdiodev->interval_t2 = TMR_INTERVAL_2;
 	sdiodev->cur_stat = 0;
+	sdiodev->tp_thd_1 = TEMP_THD_1;
+	sdiodev->tp_thd_2 = TEMP_THD_2;
+	sdiodev->tm_start = 1;
 #endif
 
 	ret = aicwf_bus_init(0, sdiodev->dev);

@@ -60,14 +60,22 @@ u32 adaptivity_patch_tbl_8800d80[][2] = {
 #define USER_EXT_FLAGS_DEFAULT_D80      (USER_PWROFST_COVER_CALIB_FLAG)
 
 #define CFG_USER_PWROFST_COVER_CALIB_EN     (1)
-#define CFG_USER_CHAN_MAX_TXPWR_EN          (defined(CONFIG_POWER_LIMIT))
+#ifdef CONFIG_POWER_LIMIT
+#define CFG_USER_CHAN_MAX_TXPWR_EN 1
+#else
+#define CFG_USER_CHAN_MAX_TXPWR_EN 0
+#endif
 #define CFG_USER_TX_USE_ANA_F_EN            (0)
-#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (defined(CONFIG_PRBREQ_REPORT))
+#ifdef CONFIG_PRBREQ_REPORT
+#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE 1
+#else
+#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE 0
+#endif
 #define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
-#define CFG_USER_LOFT_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_CAPA_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_PWR_CALIB_DISABLE_DISABLE  (0)
-#define CFG_USER_IPA_CALIB_DISABLE_DISABLE  (0)
+#define CFG_USER_LOFT_CALIB_DISABLE         (0)
+#define CFG_USER_CAPA_CALIB_DISABLE         (0)
+#define CFG_USER_PWR_CALIB_DISABLE          (0)
+#define CFG_USER_IPA_CALIB_DISABLE          (0)
 
 u32 patch_tbl_8800d80[][2] = {
 	#ifdef USE_5G
@@ -96,16 +104,16 @@ u32 patch_tbl_8800d80[][2] = {
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
             #endif
-            #if CFG_USER_LOFT_CALIB_DISABLE_DISABLE
+            #if CFG_USER_LOFT_CALIB_DISABLE
             USER_LOFT_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_CAPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_CAPA_CALIB_DISABLE
             USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_PWR_CALIB_DISABLE_DISABLE
+            #if CFG_USER_PWR_CALIB_DISABLE
             USER_PWR_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_IPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_IPA_CALIB_DISABLE
             USER_IPA_CALIB_DISABLE_FLAG |
             #endif
         0) & ~(

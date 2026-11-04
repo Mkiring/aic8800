@@ -306,7 +306,7 @@ rwnx_add_wmm_param_ie(struct sk_buff *skb, u8 acm_bits, u32 *ac_params)
         cw_max = (ac_params[j] & 0xF00 ) >> 8;
         acm = (acm_bits & (1 << j)) != 0;
 
-        wmm->ac[i].aci_aifsn = (i << 5) | (acm << 4) | (ac_params[j] & 0xF);
+        wmm->ac[i].aci_aifsn = (i << 5) | ((u8)acm << 4) | (u8)(ac_params[j] & 0xF);
         wmm->ac[i].cw = (cw_max << 4) | cw_min;
         wmm->ac[i].txop_limit = (ac_params[j] & 0x0FFFF000 ) >> 12;
     }
@@ -785,7 +785,7 @@ rwnx_tdls_send_mgmt_packet_data(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_v
         break;
     }
 
-    ret = rwnx_select_txq(rwnx_vif, skb);
+    rwnx_select_txq(rwnx_vif, skb);
     ret = rwnx_start_xmit(skb, rwnx_vif->ndev);
 
    return ret;

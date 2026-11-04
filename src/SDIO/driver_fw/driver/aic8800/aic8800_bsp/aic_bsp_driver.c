@@ -35,6 +35,7 @@
 extern int adap_test;
 extern char aic_fw_path[FW_PATH_MAX];
 extern struct aic_sdio_dev *aicbsp_sdiodev;
+extern u8 chip_sub_id;
 
 static void cmd_dump(const struct rwnx_cmd *cmd)
 {
@@ -118,7 +119,15 @@ static int cmd_mgr_queue(struct rwnx_cmd_mgr *cmd_mgr, struct rwnx_cmd *cmd)
 
 	if (!(cmd->flags & RWNX_CMD_FLAG_NONBLOCK)) {
 		unsigned long tout = msecs_to_jiffies(RWNX_80211_CMD_TIMEOUT_MS * cmd_mgr->queue_sz);
-		if (!wait_for_completion_killable_timeout(&cmd->complete, tout)) {
+		long ret = wait_for_completion_killable_timeout(&cmd->complete, tout);
+		if (ret > 0)
+		{
+			kfree(cmd);
+			cmd=NULL;
+			//printk("%s cmd free!\n",__func__);
+		}
+		else if (0 == ret)
+		{
 			printk(KERN_CRIT"cmd timed-out\n");
 			cmd_dump(cmd);
 			spin_lock_bh(&cmd_mgr->lock);
@@ -129,8 +138,10 @@ static int cmd_mgr_queue(struct rwnx_cmd_mgr *cmd_mgr, struct rwnx_cmd *cmd)
 			}
 			spin_unlock_bh(&cmd_mgr->lock);
 			err = -ETIMEDOUT;
-		} else {
-			kfree(cmd);
+		}
+		else
+		{
+			printk("%s wait_for_completion_killable_timeout is interrupted by -ERESTARTSYS!\n",__func__);
 		}
 	} else {
 		cmd->result = 0;
@@ -1713,7 +1724,7 @@ static int aicwifi_start_from_bootrom(struct aic_sdio_dev *sdiodev)
 	int ret = 0;
 
 	/* memory access */
-	const u32 fw_addr = ((sdiodev->chipid == PRODUCT_ID_AIC8800D80X2) && (!testmode))?RAM_FMAC_FW_ADDR_D80X2:RAM_FMAC_FW_ADDR;
+	const u32 fw_addr = (sdiodev->chipid == PRODUCT_ID_AIC8800D80X2)?RAM_FMAC_FW_ADDR_D80X2:RAM_FMAC_FW_ADDR;
 	struct dbg_start_app_cfm start_app_cfm;
 
 	/* fw start */
@@ -1891,7 +1902,7 @@ static int aicwifi_patch_config(struct aic_sdio_dev *sdiodev)
 int aicwifi_init(struct aic_sdio_dev *sdiodev)
 {
 	int ret = 0;
-	u32 fw_addr = ((sdiodev->chipid == PRODUCT_ID_AIC8800D80X2) && (!testmode))?RAM_FMAC_FW_ADDR_D80X2:RAM_FMAC_FW_ADDR;
+	u32 fw_addr = (sdiodev->chipid == PRODUCT_ID_AIC8800D80X2)?RAM_FMAC_FW_ADDR_D80X2:RAM_FMAC_FW_ADDR;
 
 	if(sdiodev->chipid == PRODUCT_ID_AIC8801){
 		#ifdef CONFIG_M2D_OTA_AUTO_SUPPORT
@@ -1974,10 +1985,19 @@ int aicwifi_init(struct aic_sdio_dev *sdiodev)
 				return ret;
 			}
 		}
-		ret = start_from_bootrom_8800DC(sdiodev);
-		if (ret) {
-			printk("8800d80n wifi start fail\n");
-			return -1;
+		if (testmode == 0) {
+			ret = start_from_bootrom_8800DC(sdiodev);
+			if (ret) {
+				printk("8800d80n wifi start fail\n");
+				return -1;
+			}
+		} else {
+			AICWFDBG(LOGINFO, "%s exec rftest bin\n", __func__);
+			ret = aicwf_plat_rftest_exec_8800d80n(sdiodev);
+			if (ret) {
+				AICWFDBG(LOGERROR, "exec rftest bin fail: %d\n", ret);
+				return ret;
+			}
 		}
 		}else if(sdiodev->chipid == PRODUCT_ID_AIC8800D80){
 		if (rwnx_plat_bin_fw_upload_android(sdiodev, RAM_FMAC_FW_ADDR, aicbsp_firmware_list[aicbsp_info.cpmode].wl_fw)) {
@@ -2180,8 +2200,21 @@ int aicbsp_driver_fw_init(struct aic_sdio_dev *sdiodev)
 		}
 
 		aicbsp_info.chip_rev = (u8)((rd_mem_addr_cfm.memdata >> 16) & 0x3F);
-		if (aicbsp_info.chip_rev >= CHIP_REV_U02)
-			aicbsp_firmware_list = fw_8800d80n_u02;
+
+		ret = rwnx_send_dbg_mem_read_req(sdiodev, 0x00000020, &rd_mem_addr_cfm);
+		if (ret) {
+			AICWFDBG(LOGERROR, "[0x00000020] rd fail: %d\n", ret);
+			return ret;
+		}
+		chip_sub_id = (u8)(rd_mem_addr_cfm.memdata);
+
+		if (aicbsp_info.chip_rev >= CHIP_REV_U02) {
+			if (chip_sub_id == 1) {
+				aicbsp_firmware_list = fw_8800d80n_u02;
+			} else {
+				aicbsp_firmware_list = fw_8800d80n_u02c;
+			}
+		}
 		else{
 				pr_err("aicbsp: %s, unsupport chip rev: %d\n", __func__, aicbsp_info.chip_rev);
 				return -1;

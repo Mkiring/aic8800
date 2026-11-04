@@ -419,6 +419,7 @@ enum mm_msg_tag
     MM_VENDOR_SWCONFIG_IND,
     MM_FW_PANIC_IND,
     MM_FW_ASSERT_IND,
+    MM_MCC_STATUS_IND = MM_FW_ASSERT_IND + 100,
 
     /// MAX number of messages
     MM_MAX,
@@ -1284,16 +1285,18 @@ struct mm_set_rf_config_req
 };
 
 typedef struct
-{ 
+{
 	u32_l magic_num; /*“GWCR” or ’SWCR”*/
-	u32_l info_flag; 
-	u32_l calib_flag; 
-	u32_l reserved0; 	
+	u32_l info_flag;
+	u32_l calib_flag;
+	u32_l reserved0;
 	u32_l res_data[536/sizeof(u32_l)];
 }wf_rf_calib_res_drv_t;
 
 #define DRIVER_GET_WIFI_CALRES_MAGIC_NUM 0x52435747
 #define DRIVER_SET_WIFI_CALRES_MAGIC_NUM 0x52435753
+
+#define DRIVER_CNTRL_WIFI_SECCAL_MAGIC_NUM  0x50435743
 
 struct mm_set_rf_calib_req
 {
@@ -1718,6 +1721,13 @@ struct fw_assert_info_ind
 {
     uint32_t len;
     uint8_t info[384];
+};
+
+struct mcc_status_ind
+{
+    uint8_t channel_number;
+    uint8_t mcc;
+    uint8_t scc;
 };
 
 /// Structure containing the parameters of the @ref MM_MU_GROUP_UPDATE_REQ message.
@@ -2339,12 +2349,26 @@ struct mm_get_wifi_disable_cfm
 
 enum vendor_swconfig_tag
 {
-    BCN_CFG_REQ = 0,
-    TEMP_COMP_SET_REQ,
-    TEMP_COMP_GET_REQ,
-    EXT_FLAGS_SET_REQ,
-    EXT_FLAGS_GET_REQ,
-    EXT_FLAGS_MASK_SET_REQ,
+    BCN_CFG_REQ             = 0,
+    TEMP_COMP_SET_REQ       = 1,
+    TEMP_COMP_GET_REQ       = 2,
+    EXT_FLAGS_SET_REQ       = 3,
+    EXT_FLAGS_GET_REQ       = 4,
+    EXT_FLAGS_MASK_SET_REQ  = 5,
+    DYN_DPD_CAL_RES_SET_REQ = 6,
+    DYN_DPD_CAL_RES_IND     = 7,
+    FORCE_2ANT_ANT_NUM_REQ  = 8,
+    FWLOG_REDIR_ENABLE_REQ  = 9,
+    GTK_REKEY_REQ           = 10,
+    CSI_CFG_REQ             = 11,
+    P2P_STA_MCC_PRI_REQ     = 12,
+
+    // Customized commands
+    SWOW_START              = 256, // 0x100
+    SWOW_SET_PATTERN_REQ    = 257,
+    SWOW_OID_FILTER_SRC_IP  = 258,
+    SWOW_OID_PULSETEST      = 259,
+    SWOW_OID_KEEPALIVE      = 260,
 };
 
 enum vendor_swconfig_tag_x2
@@ -2419,6 +2443,18 @@ struct mm_mask_set_ext_flags_cfm
     u32_l user_flags;
 };
 
+struct mm_gtk_rekey_req {
+    u8_l vif_idx;
+    u8_l sta_idx;
+    u8_l kek_len;
+    u8_l kck_len;
+
+    u8_l kek[64]; //max_kek_len
+    u8_l kck[32]; //max_kck_len
+    u8_l replay_ctr[8];
+    uint32_t akm;
+};
+
 struct mm_set_vendor_swconfig_req
 {
     u32_l swconfig_id;
@@ -2427,6 +2463,7 @@ struct mm_set_vendor_swconfig_req
         struct mm_set_temp_comp_req temp_comp_set_req;
         struct mm_set_ext_flags_req ext_flags_set_req;
         struct mm_mask_set_ext_flags_req ext_flags_mask_set_req;
+        struct mm_gtk_rekey_req gtk_rekey_req;
     };
 };
 

@@ -7,28 +7,56 @@
 #define FW_USERCONFIG_NAME_8800D80N         "aic_userconfig_8800d80n.txt"
 #define FW_POWERLIMIT_NAME_8800D80N         "aic_powerlimit_8800d80n.txt"
 #define RWNX_MAC_FW_RF_BASE_NAME_8800D80N   "lmacfw_rf_8800d80n.bin"
-#define RWNX_MAC_FW_INITVAR_NAME_8800D80N   "fmacfw_initvar_8800d80n.bin"
-#define RWNX_MAC_FW_GAINTBL_NAME_8800D80N   "fmacfw_gaintbl_8800d80n.bin"
 #define RWNX_MAC_FW_CINIT_NAME_8800D80N_U02 "fmacfw_cinit_8800d80n_u02.bin"
 #define RWNX_MAC_FW_CALIB_NAME_8800D80N_U02 "fmacfw_calib_8800d80n_u02.bin"
 #define RWNX_MAC_PATCH_NAME_8800D80N_U02    "fmacfw_patch_8800d80n_u02.bin"
 #define RWNX_MAC_PATCHTBL_NAME_8800D80N_U02 "fmacfw_patch_tbl_8800d80n_u02.bin"
+#define RWNX_MAC_FW_REKEY_NAME_8800D80N_U02 "fmacfw_rekey_8800d80n_u02.bin"
+
+#define RWNX_MAC_FW_CINIT_NAME_8800D80N_U02C "fmacfw_cinit_8800d80n_u02c.bin"
+#define RWNX_MAC_FW_CALIB_NAME_8800D80N_U02C "fmacfw_calib_8800d80n_u02c.bin"
+#define RWNX_MAC_PATCH_NAME_8800D80N_U02C    "fmacfw_patch_8800d80n_u02c.bin"
+#define RWNX_MAC_PATCHTBL_NAME_8800D80N_U02C "fmacfw_patch_tbl_8800d80n_u02c.bin"
+#define RWNX_MAC_FW_REKEY_NAME_8800D80N_U02C "fmacfw_rekey_8800d80n_u02c.bin"
 
 #define RAM_LMAC_FW_RF_ADDR_8800D80N        0x00132C00
 #define ROM_FMAC_CINIT_ADDR_8800D80N_U02    0x00133000
 #define ROM_FMAC_CALIB_ADDR_8800D80N_U02    0x00138000
 #define ROM_FMAC_PATCH_ADDR_8800D80N_U02    0x00188000
+#define ROM_FMAC_REKEY_ADDR_8800D80N_U02    0x00160000
 
 #define CHIP_INFO_FLAG_CINIT_BEGIN          (0x01U << 12)
 #define CHIP_INFO_FLAG_CINIT_DONE           (0x01U << 13)
 
 #define PATCH_VAR_FLAG_CALIB_BEGIN          (0x01U << 0)
 #define PATCH_VAR_FLAG_CALIB_DONE           (0x01U << 1)
+#define PATCH_VAR_FLAG_SECURE_CALIB_EN      (0x01U << 2)
 
 #define WF_RXGAIN_TBL_IDX_MAX       20
 #define WF_RXGAIN_TBL_SIZE          256
 #define WF_TXGAIN_TBL_IDX_MAX       21
 #define WF_TXGAIN_TBL_SIZE          128
+
+#define USER_PWROFST_COVER_CALIB_FLAG   (0x01U << 0)
+#define USER_CHAN_MAX_TXPWR_EN_FLAG     (0x01U << 1)
+#define USER_APM_PRBRSP_OFFLOAD_DISABLE_FLAG    (0x01U << 3)
+#define USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG     (0x01U << 4)
+
+#define USER_EXT_FLAGS_DEFAULT_D80N  \
+    (USER_PWROFST_COVER_CALIB_FLAG)
+
+#define CFG_USER_PWROFST_COVER_CALIB_EN     (1)
+#if defined(CONFIG_POWER_LIMIT)
+#define CFG_USER_CHAN_MAX_TXPWR_EN          (1)
+#else
+#define CFG_USER_CHAN_MAX_TXPWR_EN          (0)
+#endif
+#if defined(CONFIG_PRBREQ_REPORT)
+#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (1)
+#else
+#define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (0)
+#endif
+#define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
 
 extern char aic_fw_path[200];
 
@@ -48,41 +76,38 @@ typedef u32 (*array3_tbl_t)[3];
 
 u32 syscfg_tbl_masked_8800d80n[][3] = {
     // {Address, mask, value}
-    #if DEF_PATCH_METHOD_VER_1 // moved to cinit.bin
-    // anareg1, u01 only
-    {0x4050201C, (0x7 << 0), (0x7 << 0)},
-    // pmic_pmu_init
-    {0x70001024, ((0x1F << 0) | (0x1 << 14) | (0x1 << 15)),
-                 ((0x08 << 0) | (0x1 << 14) | (0x1 << 15))},
-    {0x70001044, (0xF << 20), (0x4 << 20)},
-    {0x70001084, ((0xF << 23) | (0x1 << 27) | (0x1 << 31)),
-                 ((0x4 << 23) | (0x0 << 27) | (0x1 << 31))},
-    {0x70002118, (0x3 << 0), (0x0 << 0)},
-    {0x7000211C, (0x3 << 2), (0x0 << 2)},
-    {0x700021D8, (0x3 << 4), (0x0 << 4)},
-    {0x700021D0, ((0x1 << 5) | (0x1 << 6)),
-                 ((0x1 << 5) | (0x1 << 6))},
-    #if defined(CONFIG_VRF_DCDC_MODE)
-    {0x70001000, (0x1 << 0), (0x1 << 0)},
-    #else
-    {0x70001000, (0x1 << 0), (0x0 << 0)},
-    #endif
-    // cm_rf_init
-    {0x4050500C, ((0x7 << 27) | (0x3 << 30)),
-                 ((0x3 << 27) | (0x3 << 30))},
-    {0x40505008, ((0x3 << 11) | (0xF << 15)),
-                 ((0x1 << 11) | (0x4 << 15))},
-    #endif
     {0x00000000, 0x00000000, 0x00000000}, // last one
 };
 
 u32 patch_tbl_wifisetting_8800d80n[][2] =
 {
     //{0x00b8, 0x00009d08 | (0x01U << 13)}, // debug_mask, bit13: CALIB_BIT
+    {0x017c,
+        (USER_EXT_FLAGS_DEFAULT_D80N |
+            #if CFG_USER_CHAN_MAX_TXPWR_EN
+            USER_CHAN_MAX_TXPWR_EN_FLAG |
+            #endif
+            #if CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE
+            USER_APM_PRBRSP_OFFLOAD_DISABLE_FLAG |
+            #endif
+            #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
+            USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
+            #endif
+        0) & ~(
+            #if !CFG_USER_PWROFST_COVER_CALIB_EN
+            USER_PWROFST_COVER_CALIB_FLAG |
+            #endif
+        0)
+    }, // user_ext_flags
+#ifdef CONFIG_PLATFORM_HI
+    {0x0150, 0x01140A01}, //rx aggr counter
+#endif
+
 };
 
 //adap test
 u32 adaptivity_patch_tbl_8800d80n[][2] = {
+    {0x0160, 0x00010000},
 };
 
 u32 patch_tbl_rf_func_8800d80n[][2] =
@@ -143,8 +168,13 @@ int aicwf_plat_patch_load_8800d80n(struct rwnx_hw *rwnx_hw)
     int ret = 0;
     char patch_ver_str[128];
     //wifi patch
-    ret = rwnx_plat_bin_fw_upload_2_with_version(rwnx_hw,
-        ROM_FMAC_PATCH_ADDR_8800D80N_U02, RWNX_MAC_PATCH_NAME_8800D80N_U02, patch_ver_str, sizeof(patch_ver_str));
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_2_with_version(rwnx_hw,
+            ROM_FMAC_PATCH_ADDR_8800D80N_U02, RWNX_MAC_PATCH_NAME_8800D80N_U02, patch_ver_str, sizeof(patch_ver_str));
+    } else {
+        ret = rwnx_plat_bin_fw_upload_2_with_version(rwnx_hw,
+            ROM_FMAC_PATCH_ADDR_8800D80N_U02, RWNX_MAC_PATCH_NAME_8800D80N_U02C, patch_ver_str, sizeof(patch_ver_str));
+    }
     if (ret) {
         AICWFDBG(LOGERROR, "load patch bin fail: %d\n", ret);
         return ret;
@@ -156,10 +186,15 @@ int aicwf_plat_patch_load_8800d80n(struct rwnx_hw *rwnx_hw)
 int aicwf_plat_patch_table_load_8800d80n(struct rwnx_hw *rwnx_hw)
 {
     int err = 0;
-    unsigned int i, size;
+    int i, size;
     u32 *dst = NULL;
-    char *filename = RWNX_MAC_PATCHTBL_NAME_8800D80N_U02;
+    char *filename;
 
+    if (chip_sub_id == 1) {
+        filename = RWNX_MAC_PATCHTBL_NAME_8800D80N_U02;
+    } else {
+        filename = RWNX_MAC_PATCHTBL_NAME_8800D80N_U02C;
+    }
     /* Copy the file on the Embedded side */
     AICWFDBG(LOGINFO, "### Upload %s \n", filename);
 
@@ -271,13 +306,6 @@ void aicwf_patch_config_8800d80n(struct rwnx_hw *rwnx_hw)
         }
         //adap test
 
-        #if DEF_PATCH_METHOD_VER_1
-        ret = aicwf_plat_initvar_load_8800d80n(rwnx_hw, txgain_cfg_24g_addr);
-        if (ret) {
-            AICWFDBG(LOGERROR, "initvar load fail: %d\n", ret);
-            return;
-        }
-        #endif
     }
     else {
         u32 patch_tbl_rf_func_num = sizeof(patch_tbl_rf_func_8800d80n)/sizeof(u32)/2;
@@ -329,74 +357,7 @@ int aicwf_plat_rftest_exec_8800d80n(struct rwnx_hw *rwnx_hw)
     return ret;
 }
 
-#if DEF_PATCH_METHOD_VER_1
-int aicwf_plat_initvar_load_8800d80n(struct rwnx_hw *rwnx_hw, u32 var_base_addr)
-{
-    int ret = 0;
-    ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, var_base_addr, RWNX_MAC_FW_INITVAR_NAME_8800D80N);
-    if (ret) {
-        AICWFDBG(LOGERROR, "load initvar bin fail: %d\n", ret);
-        return ret;
-    }
-    return ret;
-}
 
-int aicwf_plat_gain_table_load_8800d80n(struct rwnx_hw *rwnx_hw)
-{
-    int size, desired_size, idx, ret;
-    u32 *dst=NULL;
-    u8_l *tbl_base;
-    char *filename = RWNX_MAC_FW_GAINTBL_NAME_8800D80N;
-
-    AICWFDBG(LOGINFO, "gaintbl file path:%s\n", filename);
-
-    /* load file */
-    size = rwnx_request_firmware_common(rwnx_hw, &dst, filename);
-    desired_size = WF_RXGAIN_TBL_IDX_MAX * WF_RXGAIN_TBL_SIZE + WF_TXGAIN_TBL_IDX_MAX * WF_TXGAIN_TBL_SIZE;
-    if ((size <= 0) || (size != desired_size)) {
-        AICWFDBG(LOGERROR, "wrong size of firmware file, desired=%d, size=%d\n", desired_size, size);
-        if (dst) {
-            rwnx_release_firmware_common(&dst);
-            dst = NULL;
-        }
-        return 0;
-    }
-
-    /* Copy the file on the Embedded side */
-    AICWFDBG(LOGINFO, "### Load file done: %s, size=%d\n", filename, size);
-
-    /* RX gain */
-    tbl_base = (u8_l *)dst;
-    for (idx = 0; idx < WF_RXGAIN_TBL_IDX_MAX; idx++) {
-        u16_l ofst = idx * 16;
-        u8_l *tbl_ptr = tbl_base + idx * WF_RXGAIN_TBL_SIZE;
-        ret = rwnx_send_rf_config_v2_req(rwnx_hw, ofst, 0, tbl_ptr, WF_RXGAIN_TBL_SIZE);
-        if (ret) {
-            AICWFDBG(LOGERROR, "rx gain rf_config_req fail, ret=%d, ofst=%d\n", ret, ofst);
-            break;
-        }
-    }
-
-    /* TX gain */
-    tbl_base = (u8_l *)dst + WF_RXGAIN_TBL_IDX_MAX * WF_RXGAIN_TBL_SIZE;
-    for (idx = 0; idx < WF_TXGAIN_TBL_IDX_MAX; idx++) {
-        u16_l ofst = idx * 16;
-        u8_l *tbl_ptr = tbl_base + idx * WF_TXGAIN_TBL_SIZE;
-        ret = rwnx_send_rf_config_v2_req(rwnx_hw, ofst, 2, tbl_ptr, WF_TXGAIN_TBL_SIZE);
-        if (ret) {
-            AICWFDBG(LOGERROR, "tx gain rf_config_req fail, ret=%d, ofst=%d\n", ret, ofst);
-            break;
-        }
-    }
-
-    rwnx_release_firmware_common(&dst);
-
-    AICWFDBG(LOGINFO, "gaintbl download complete\n\n");
-    return 0;
-}
-#endif
-
-#if DEF_PATCH_METHOD_VER_2
 int aicwf_plat_cinit_exec_8800d80n(struct rwnx_hw *rwnx_hw)
 {
     int ret = 0;
@@ -424,7 +385,11 @@ int aicwf_plat_cinit_exec_8800d80n(struct rwnx_hw *rwnx_hw)
         AICWFDBG(LOGINFO, "cinit executed, chipinfo=%x\n", mem_val);
         return ret;
     }
-    ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_CINIT_ADDR_8800D80N_U02, RWNX_MAC_FW_CINIT_NAME_8800D80N_U02);
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_CINIT_ADDR_8800D80N_U02, RWNX_MAC_FW_CINIT_NAME_8800D80N_U02);
+    } else {
+        ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_CINIT_ADDR_8800D80N_U02, RWNX_MAC_FW_CINIT_NAME_8800D80N_U02C);
+    }
     if (ret) {
         AICWFDBG(LOGERROR, "load cinit bin fail: %d\n", ret);
         return ret;
@@ -458,7 +423,19 @@ int aicwf_plat_calib_exec_8800d80n(struct rwnx_hw *rwnx_hw)
         AICWFDBG(LOGINFO, "calib executed, var_flags=%x\n", patch_var_flags_val);
         return ret;
     }
-    ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_CALIB_ADDR_8800D80N_U02, RWNX_MAC_FW_CALIB_NAME_8800D80N_U02);
+    #if (CONFIG_SECURE_CALIB_EXEC_ENABLED)
+    patch_var_flags_val |= PATCH_VAR_FLAG_SECURE_CALIB_EN;
+    ret = rwnx_send_dbg_mem_write_req(rwnx_hw, patch_var_flags_addr, patch_var_flags_val);
+    if (ret) {
+        AICWFDBG(LOGERROR, "%x wr fail: %d\n", patch_var_flags_addr, ret);
+        return ret;
+    }
+    #endif
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_CALIB_ADDR_8800D80N_U02, RWNX_MAC_FW_CALIB_NAME_8800D80N_U02);
+    } else {
+        ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_CALIB_ADDR_8800D80N_U02, RWNX_MAC_FW_CALIB_NAME_8800D80N_U02C);
+    }
     if (ret) {
         AICWFDBG(LOGERROR, "load calib bin fail: %d\n", ret);
         return ret;
@@ -470,6 +447,36 @@ int aicwf_plat_calib_exec_8800d80n(struct rwnx_hw *rwnx_hw)
     ret = rwnx_send_dbg_start_app_req(rwnx_hw, fw_addr, boot_type);
     if (ret) {
         AICWFDBG(LOGERROR, "start app fail: %d\n", ret);
+        return ret;
+    }
+    return ret;
+}
+
+int aicwf_plat_secure_calib_exec_8800d80n(struct rwnx_hw *rwnx_hw)
+{
+    int ret = 0;
+    struct mm_set_rf_calib_cfm cfm;
+    AICWFDBG(LOGINFO, "exec secure calib\n");
+    ret = rwnx_send_rf_secure_calib_req(rwnx_hw, &cfm, 0);
+    if (ret) {
+        AICWFDBG(LOGERROR, "secure calib fail, ret=%d\n", ret);
+        return ret;
+    }
+    return ret;
+}
+
+#ifdef CONFIG_REKEY_OFFLOAD
+int aicwf_plat_rekey_exec_8800d80n(struct rwnx_hw *rwnx_hw)
+{
+    int ret = 0;
+
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_REKEY_ADDR_8800D80N_U02, RWNX_MAC_FW_REKEY_NAME_8800D80N_U02);
+    } else {
+        ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, ROM_FMAC_REKEY_ADDR_8800D80N_U02, RWNX_MAC_FW_REKEY_NAME_8800D80N_U02C);
+    }
+    if (ret) {
+        AICWFDBG(LOGERROR, "load rekey bin fail: %d\n", ret);
         return ret;
     }
     return ret;
@@ -487,14 +494,6 @@ int aicwf_set_rf_config_8800d80n(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib
 		return -1;
 	}
 	if ((ret = rwnx_send_txpwr_ofst2x_req(rwnx_hw))) {
-		return -1;
-	}
-    #if DEF_PATCH_METHOD_VER_1
-    if (testmode == FW_NORMAL_MODE) {
-        aicwf_plat_gain_table_load_8800d80n(rwnx_hw);
-    }
-    #endif
-	if ((ret = rwnx_send_rf_calib_req(rwnx_hw, cfm))) {
 		return -1;
 	}
 	return 0 ;
@@ -549,7 +548,7 @@ int rwnx_plat_powerlimit_load_8800d80n(struct rwnx_hw *rwnx_hw)
     AICWFDBG(LOGINFO, "### Load file done: %s, size=%d\n", filename, size);
 
     /* parsing the file */
-    rwnx_plat_powerlimit_parsing((char *)dst, size, country_code);
+    rwnx_plat_powerlimit_parsing((char *)dst, size);
 
     rwnx_release_firmware_common(&dst);
 

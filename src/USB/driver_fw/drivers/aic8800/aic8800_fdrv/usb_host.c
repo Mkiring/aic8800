@@ -132,7 +132,7 @@ int aicwf_rwnx_usb_platform_init(struct aic_usb_dev *usbdev)
 {
     struct rwnx_plat *rwnx_plat = NULL;
     void *drvdata;
-    int ret = -ENODEV;
+    int ret;
 
     rwnx_plat = kzalloc(sizeof(struct rwnx_plat), GFP_KERNEL);
 

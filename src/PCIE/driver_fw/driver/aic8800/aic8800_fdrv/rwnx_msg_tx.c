@@ -592,6 +592,7 @@ int rwnx_send_add_if (struct rwnx_hw *rwnx_hw, const unsigned char *mac,
 		add_if_req_param->type = MM_MESH_POINT;
 		break;
 	case NL80211_IFTYPE_AP_VLAN:
+		AICWFDBG(LOGINFO, "%s AP_VLAN error\n", __func__);
 		return -1;
 	case NL80211_IFTYPE_MONITOR:
 		add_if_req_param->type = MM_MONITOR;
@@ -2747,6 +2748,12 @@ int rwnx_send_apm_start_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *vif,
 	int var_offset = offsetof(struct ieee80211_mgmt, u.beacon.variable);
 	const u8 *var_pos;
 	int len, i;
+#ifdef CONFIG_POWER_LIMIT
+        int8_t max_pwr;
+        uint8_t r_idx;
+        txpwr_loss_conf_t txpwr_loss_tmp;
+        txpwr_loss_conf_t *txpwr_loss;
+#endif
 
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
 
@@ -2834,6 +2841,25 @@ int rwnx_send_apm_start_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *vif,
 	else
 		req->ctrl_port_ethertype = ETH_P_PAE;
 	req->flags = flags;
+
+#ifdef CONFIG_POWER_LIMIT
+        r_idx = get_ccode_region(rwnx_hw->wiphy->regd->alpha2);
+        txpwr_loss = &txpwr_loss_tmp;
+        get_userconfig_txpwr_loss(txpwr_loss);
+        max_pwr = get_powerlimit_by_freq(req->chan.band, req->chan.freq, r_idx);
+        if (req->chan.band == PHY_BAND_2G4) {
+                if (txpwr_loss->loss_enable_2g4 == 1)
+                        max_pwr -= txpwr_loss->loss_value_2g4;
+        } else if (req->chan.band == PHY_BAND_5G) {
+                if (txpwr_loss->loss_enable_5g == 1)
+                        max_pwr -= txpwr_loss->loss_value_5g;
+        }
+        if (req->chan.tx_power > max_pwr) {
+                AICWFDBG(LOGDEBUG, "ccode: %s, req_pwr: %d max_pwr: %d\n",
+                        rwnx_hw->wiphy->regd->alpha2, req->chan.tx_power, max_pwr);
+                req->chan.tx_power = max_pwr;
+        }
+#endif
 
 	/* Send the APM_START_REQ message to LMAC FW */
 	return rwnx_send_msg(rwnx_hw, req, 1, APM_START_CFM, cfm);

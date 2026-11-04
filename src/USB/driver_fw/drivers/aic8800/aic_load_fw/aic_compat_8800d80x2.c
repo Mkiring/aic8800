@@ -43,6 +43,7 @@ typedef struct {
 #define USER_CHAN_MAX_TXPWR_EN_FLAG     (0x01U << 1)
 #define USER_APM_PRBRSP_OFFLOAD_DISABLE_FLAG    (0x01U << 3)
 #define USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG     (0x01U << 4)
+#define USER_CAPA_CALIB_DISABLE_FLAG    (0x01U << 7)
 #define USER_RF_WITH_SAW_EN_FLAG        (0x01U << 10)
 #define USER_SETCH_LOFT_CALIB_EN_FLAG   (0x01U << 11)
 #define USER_SETCH_RXDC_CALIB_EN_FLAG   (0x01U << 12)
@@ -64,6 +65,7 @@ typedef struct {
 #define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (0)
 #endif
 #define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
+#define CFG_USER_CAPA_CALIB_DISABLE         (1)
 #define CFG_USER_RF_WITH_SAW_EN             (0)
 #define CFG_USER_SETCH_LOFT_CALIB_EN        (1)
 #define CFG_USER_SETCH_RXDC_CALIB_EN        (0)
@@ -93,6 +95,9 @@ u32 patch_tbl_d80x2[][2] =
             #endif
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
+            #endif
+            #if CFG_USER_CAPA_CALIB_DISABLE
+            USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
             #if CFG_USER_RF_WITH_SAW_EN
             USER_RF_WITH_SAW_EN_FLAG |
@@ -417,7 +422,7 @@ static int aicbt_ext_patch_data_load(struct aic_usb_dev *usb_dev, struct aicbt_p
             id = *(patch_info->ext_patch_param + (index * 2));
             addr = *(patch_info->ext_patch_param + (index * 2) + 1);
             memset(ext_patch_file_name, 0, sizeof(ext_patch_file_name));
-            sprintf(ext_patch_file_name,"%s%d.bin",
+            sprintf(ext_patch_file_name,"%s%u.bin",
                 filename,
                 id);
             AICWFDBG(LOGDEBUG, "%s ext_patch_file_name:%s ext_patch_id:%x ext_patch_addr:%x \r\n",
@@ -465,9 +470,6 @@ int aicfw_download_fw_8800d80x2(struct aic_usb_dev *usb_dev)
         return -1;
     }
 
-    if(head == NULL){
-        return -1;
-    }
     if (chip_id < CHIP_REV_U05) {
         patch_info.addr_adid = FW_RAM_ADID_BASE_ADDR_8800D80X2_U03;
         patch_info.addr_patch = FW_RAM_PATCH_BASE_ADDR_8800D80X2_U03;
@@ -622,6 +624,9 @@ int aicfw_download_fw_8800d80x2(struct aic_usb_dev *usb_dev)
                 AICWFDBG(LOGERROR,"%s wifi fw download fail \r\n", __func__);
                 return -1;
             }
+            if (aicwf_patch_config_8800d80x2(usb_dev)) {
+                return -1;
+            }
             if (rwnx_send_dbg_start_app_req(usb_dev, RAM_FMAC_RF_FW_ADDR_8800D80X2, HOST_START_APP_AUTO)) {
                 return -1;
             }
@@ -647,10 +652,13 @@ int aicfw_download_fw_8800d80x2(struct aic_usb_dev *usb_dev)
 #endif
             if(rwnx_plat_bin_fw_upload_android(usb_dev, RAM_FMAC_RF_FW_ADDR_8800D80X2, FW_RF_BASE_NAME_8800D80X2)) {
              AICWFDBG(LOGERROR,"%s wifi fw download fail \r\n", __func__);
-                    return -1;
+                return -1;
+            }
+            if (aicwf_patch_config_8800d80x2(usb_dev)) {
+                return -1;
             }
             if (rwnx_send_dbg_start_app_req(usb_dev, RAM_FMAC_RF_FW_ADDR_8800D80X2, HOST_START_APP_AUTO)) {
-                    return -1;
+                return -1;
             }
 	    }
     }else if(testmode == FW_BLE_SCAN_AD_FILTER_MODE){

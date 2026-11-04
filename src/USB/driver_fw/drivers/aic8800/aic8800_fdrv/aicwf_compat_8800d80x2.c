@@ -41,7 +41,12 @@ int	rwnx_plat_userconfig_load_8800d80x2(struct rwnx_hw *rwnx_hw){
     char *filename = FW_USERCONFIG_NAME_8800D80X2;
 
 #ifndef ANDROID_PLATFORM
-    sprintf(aic_fw_path, "%s/%s", aic_fw_path, "aic8800D80X2");
+    {
+        char temp_path[200];
+        snprintf(temp_path, sizeof(temp_path), "%s/%s", aic_fw_path, "aic8800D80X2");
+        strncpy(aic_fw_path, temp_path, 199);
+        aic_fw_path[199] = '\0';
+    }
 #endif
 
     AICWFDBG(LOGINFO, "userconfig file path:%s \r\n", filename);

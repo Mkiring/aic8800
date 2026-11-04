@@ -88,6 +88,15 @@ enum {
 	EXEC_FLASH_OPER,
 	RDWR_PWRADD2X,
 	RDWR_EFUSE_PWRADD2X,
+	SET_TX2,
+	SET_RX2,
+	TC_CFG,
+	READ_TEMP,
+	DPD_DC,
+	SET_CHAN_CALIB,
+	RDWR_GPIO,
+	RDWR_EFUSE_BT_LNA_MODE,
+
 	GET_RSSI=0x52,
 	CHECK_FLASH=0x108,
 };
@@ -135,9 +144,23 @@ typedef struct
 {
 	u8_l func;
 	u8_l cnt;
-	u8_l reserved[2];
 	u32_l usrdata[3]; // 3 words totally
 } cmd_ef_usrdata_t;
+
+typedef struct {
+	u8_l band;
+	u8_l chan;
+	u8_l bw_type;
+	u8_l np20idx;
+	u16_l calib_count;
+} cmd_rf_setchan_calib_t;
+
+typedef struct {
+	u8_l sel_gpioa;
+	u8_l idx;
+	u8_l dir;
+	u8_l val;
+} cmd_rdwr_gpio_t;
 
 typedef struct
 {
@@ -276,7 +299,7 @@ static int aic_priv_cmd_set_tx (struct rwnx_hw *rwnx_hw, int argc, char *argv[],
 {
 	cmd_rf_settx_t settx_param;
 	u8_l set_p = 0;
-	u8_l lvl_band, lvl_mod, lvl_idx, lvl_pwr = 0;
+	u8_l lvl_pwr = 0;
 	u8_l buf[10];
 #ifdef CONFIG_POWER_LIMIT
 	int8_t max_pwr;
@@ -306,6 +329,7 @@ static int aic_priv_cmd_set_tx (struct rwnx_hw *rwnx_hw, int argc, char *argv[],
 		settx_param.tx_intv_us = 10000; // set default val 10ms
 	}
 	if (argc > 7) {
+		u8_l lvl_band, lvl_mod = 0, lvl_idx;
 		if (dev->chipid == PRODUCT_ID_AIC8801){
 			AICWFDBG(LOGERROR, "unsupported cmd\n");
 			return -EINVAL;
@@ -406,12 +430,11 @@ static int aic_priv_cmd_set_rxstop (struct rwnx_hw *rwnx_hw, int argc, char *arg
 
 static int aic_priv_cmd_set_tx_tone (struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
 {
-	u8_l func = 0;
-	u8_l buf[2];
-	s8_l freq_ = 0;
-
 	AICWFDBG(LOGINFO, "%s argc:%d\n", argv[0], argc);
 	if ((argc == 2) || (argc == 3)) {
+		u8_l func = 0;
+		u8_l buf[2];
+		s8_l freq_ = 0;
 		AICWFDBG(LOGINFO, "argv 1:%s\n",argv[1]);
 		func = (u8_l)command_strtoul(argv[1], NULL, 16);
 		if (argc == 3) {
@@ -760,6 +783,7 @@ static int aic_priv_cmd_rdwr_pwrlvl (struct rwnx_hw *rwnx_hw, int argc, char *ar
 			u8_l grp = (u8_l)command_strtoul(argv[2], NULL, 16);
 			u8_l idx, size;
 			u8_l buf[14] = {func, grp,};
+			s8_l pwrlvl;
 			if (argc > 12) { // set all grp
 			AICWFDBG(LOGINFO, "set pwrlvl %s:\n"
 				   "  [%x] =", (func == 1) ? "2.4g" : "5g", grp);
@@ -769,7 +793,7 @@ static int aic_priv_cmd_rdwr_pwrlvl (struct rwnx_hw *rwnx_hw, int argc, char *ar
 					size = 12;
 				}
 				for (idx = 0; idx < size; idx++) {
-					s8_l pwrlvl = (s8_l)command_strtoul(argv[3 + idx], NULL, 10);
+					pwrlvl = (s8_l)command_strtoul(argv[3 + idx], NULL, 10);
 					buf[2 + idx] = (u8_l)pwrlvl;
 					if (idx && !(idx & 0x3)) {
 						AICWFDBG(LOGINFO, " ");
@@ -779,8 +803,8 @@ static int aic_priv_cmd_rdwr_pwrlvl (struct rwnx_hw *rwnx_hw, int argc, char *ar
 				AICWFDBG(LOGINFO, "\n");
 				size += 2;
 			} else { // set grp[idx]
-				u8_l idx = (u8_l)command_strtoul(argv[3], NULL, 10);
-				s8_l pwrlvl = (s8_l)command_strtoul(argv[4], NULL, 10);
+				idx = (u8_l)command_strtoul(argv[3], NULL, 10);
+				pwrlvl = (s8_l)command_strtoul(argv[4], NULL, 10);
 				buf[2] = idx;
 				buf[3] = (u8_l)pwrlvl;
 				size = 4;
@@ -1513,7 +1537,90 @@ static int aic_priv_cmd_rdwr_efuse_pwradd2x (struct rwnx_hw *rwnx_hw, int argc, 
 	return 3;
 }
 
+static int aic_priv_cmd_set_chan_calib(struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
+{
+	cmd_rf_setchan_calib_t setch_cal_param;
+#ifdef AICWF_SDIO_SUPPORT
+	struct aic_sdio_dev *dev = g_rwnx_plat->sdiodev;
+#endif
+#ifdef AICWF_USB_SUPPORT
+	struct aic_usb_dev *dev = g_rwnx_plat->usbdev;
+#endif
 
+	if (dev->chipid != PRODUCT_ID_AIC8800D81X2|| dev->chipid != PRODUCT_ID_AIC8800D89X2) {
+		AICWFDBG(LOGERROR, "SET_CHAN_CALIB, only D80X2 support\n");
+		return -EINVAL;
+	}
+
+	if (argc < 6)
+		return -EINVAL;
+
+	setch_cal_param.band = command_strtoul(argv[1], NULL, 10);
+	setch_cal_param.chan = command_strtoul(argv[2], NULL, 10);
+	setch_cal_param.bw_type = command_strtoul(argv[3], NULL, 10);
+	setch_cal_param.np20idx = command_strtoul(argv[4], NULL, 10);
+	setch_cal_param.calib_count = command_strtoul(argv[5], NULL, 10);
+	rwnx_send_rftest_req(rwnx_hw, SET_CHAN_CALIB, sizeof(setch_cal_param), (u8_l *)&setch_cal_param, &cfm);
+	return 0;
+}
+
+
+static int aic_priv_cmd_rdwr_gpio(struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
+{
+
+	cmd_rdwr_gpio_t cmd_rdwr_gpio;
+#ifdef AICWF_SDIO_SUPPORT
+	struct aic_sdio_dev *dev = g_rwnx_plat->sdiodev;
+#endif
+#ifdef AICWF_USB_SUPPORT
+	struct aic_usb_dev *dev = g_rwnx_plat->usbdev;
+#endif
+
+	if (dev->chipid < PRODUCT_ID_AIC8800D81) {
+		AICWFDBG(LOGERROR, "rdwr_gpio only d80 d80x2 support\n");
+		return -EINVAL;
+	}
+
+	if (argc < 4)
+		return -EINVAL;
+
+	cmd_rdwr_gpio.sel_gpioa = (u8_l)command_strtoul(argv[1], NULL, 10);
+	cmd_rdwr_gpio.idx = (u8_l)command_strtoul(argv[2], NULL, 10);
+	cmd_rdwr_gpio.dir = (u8_l)command_strtoul(argv[3], NULL, 10);
+	cmd_rdwr_gpio.val = 0;
+	if (argc > 4) {
+	cmd_rdwr_gpio.val = (u8_l)command_strtoul(argv[4], NULL, 10);
+	}
+	rwnx_send_rftest_req(rwnx_hw, RDWR_GPIO, sizeof(cmd_rdwr_gpio), (u8_l *)&cmd_rdwr_gpio, &cfm);
+	AICWFDBG(LOGINFO, "rdwr_gpio: %x %x %x %x \n", cmd_rdwr_gpio.sel_gpioa, cmd_rdwr_gpio.idx, cmd_rdwr_gpio.dir, cmd_rdwr_gpio.val);
+	AICWFDBG(LOGINFO, "val: %x\n", cfm.rftest_result[0]);
+	memcpy(command, &cfm.rftest_result[0], 4);
+	return 4;
+}
+
+static int aic_priv_cmd_rdwr_efuse_bt_lna_mode (struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
+{
+	u8_l func = 0;
+
+	if (argc > 1) {
+		func = (u8_l)command_strtoul(argv[1], NULL, 10);
+	}
+	if ((func > 0) && (argc > 2)) {
+		func = 1;
+	}
+
+	if (func == 0) { // read cur
+		rwnx_send_rftest_req(rwnx_hw, RDWR_EFUSE_BT_LNA_MODE, 0, NULL, &cfm);
+	} else if (func == 1) { // write bt tx pwrofst
+		AICWFDBG(LOGINFO, "set efuse bt lna mode %d\r\n",func);
+		rwnx_send_rftest_req(rwnx_hw, RDWR_EFUSE_BT_LNA_MODE, sizeof(func), &func, &cfm);
+	} else {
+		AICWFDBG(LOGERROR, "wrong func: %x\n", func);
+		return -EINVAL;
+	}
+	memcpy(command, &cfm.rftest_result[0], 4);
+	return 4;
+}
 
 static int aic_priv_cmd_check_flash(struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
 {
@@ -1527,6 +1634,23 @@ static int aic_priv_cmd_check_flash(struct rwnx_hw *rwnx_hw, int argc, char *arg
     memcpy(command, &cfm.rftest_result[0], 8);
 
     return 8;
+}
+
+static int aic_priv_cmd_get_bondid(struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
+{
+	int ret = 0;
+	const u32 mem_addr = 0x40500000;
+	struct dbg_mem_read_cfm rd_mem_addr_cfm;
+	ret = rwnx_send_dbg_mem_read_req(rwnx_hw, mem_addr, &rd_mem_addr_cfm);
+	if (ret) {
+		AICWFDBG(LOGERROR, "%x rd fail: %d\n", mem_addr, ret);
+		return ret;
+	}
+
+	AICWFDBG(LOGINFO, "bondid: %x\n", rd_mem_addr_cfm.memdata);
+	memcpy(command, &rd_mem_addr_cfm.memdata, 4);
+
+	return 4;
 }
 
 static int aic_priv_cmd_get_rssi(struct rwnx_hw *rwnx_hw, int argc, char *argv[], char *command)
@@ -1698,8 +1822,16 @@ static const struct aic_priv_cmd aic_priv_commands[] = {
 	  "a value is added for both 2.4G and 5G to achieve overall power adjustment of the band"},
 	{"rdwr_efuse_pwradd2x", aic_priv_cmd_rdwr_efuse_pwradd2x,
 	  "a value is added for both 2.4G and 5G to achieve overall power adjustment of the band, write to efuse"},
+	{ "set_chan_calib", aic_priv_cmd_set_chan_calib,
+	  "band chan bw_type np20idx calib_count" },
+	{ "rdwr_gpio", aic_priv_cmd_rdwr_gpio,
+	  "<gpio> (A/B) , <idx>, <dir>: 0(input)/1(output), <val> (need val when output)" },
+	{"rdwr_efuse_bt_lna_mode", aic_priv_cmd_rdwr_efuse_bt_lna_mode,
+	  "bt_lna_mode for D80N D40N <func>:0(read)/1(set)" },
 	{"check_flash", aic_priv_cmd_check_flash,
 	  "check bin crc in flash" },
+	{"get_bondid", aic_priv_cmd_get_bondid,
+	  "get chip bond id" },
 	{"get_rssi", aic_priv_cmd_get_rssi, "get rssi"},
 #ifdef CONFIG_DYNAMIC_PERPWR
 	{"set_sta_thd", aic_priv_cmd_set_sta_thd,
@@ -1736,7 +1868,7 @@ int handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 	int argc;
 	struct rwnx_vif *vif = container_of(net->ieee80211_ptr, struct rwnx_vif, wdev);
 	struct rwnx_hw *p_rwnx_hw = vif->rwnx_hw;
-	
+
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
 
 #if 0
@@ -1848,13 +1980,13 @@ void set_mon_chan(struct rwnx_vif *vif, char *parameter)
 {
     struct cfg80211_chan_def *chandef = NULL;
     int freq = 0;
-    
-    
+
+
     chandef = (struct cfg80211_chan_def *)vmalloc(sizeof(struct cfg80211_chan_def));
     memset(chandef, 0, sizeof(struct cfg80211_chan_def));
     chandef->chan = (struct ieee80211_channel *)vmalloc(sizeof(struct ieee80211_channel));
     memset(chandef->chan, 0, sizeof(struct ieee80211_channel));
-    
+
     freq = rwnx_atoi2(parameter, 4);
 
     if(freq <= 2484){

@@ -50,20 +50,6 @@ extern char aic_fw_path[FW_PATH_MAX_LEN];
 
 struct rwnx_plat *g_rwnx_plat;
 
-typedef struct
-{
-    txpwr_lvl_conf_t txpwr_lvl;
-    txpwr_lvl_conf_v2_t txpwr_lvl_v2;
-    txpwr_lvl_conf_v3_t txpwr_lvl_v3;
-	txpwr_lvl_conf_v4_t txpwr_lvl_v4;
-    txpwr_lvl_adj_conf_t txpwr_lvl_adj;
-	txpwr_loss_conf_t txpwr_loss;
-    txpwr_ofst_conf_t txpwr_ofst;
-	txpwr_ofst2x_conf_t txpwr_ofst2x;
-	txpwr_ofst2x_conf_v2_t txpwr_ofst2x_v2;
-    xtal_cap_conf_t xtal_cap;
-} userconfig_info_t;
-
 userconfig_info_t userconfig_info = {
     .txpwr_lvl = {
         .enable           = 1,
@@ -978,6 +964,102 @@ void get_userconfig_xtal_cap(xtal_cap_conf_t *xtal_cap)
     AICWFDBG(LOGINFO, "%s:xtal_cap_fine:%d\r\n", __func__, xtal_cap->xtal_cap_fine);
 }
 
+s8_l get_txpwr_min(s8_l power)
+{
+	int i=0;
+	power = 25;
+
+	if(g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80X2){
+		for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v4.pwrlvl_11b_11ag_2g4[i])
+				power = userconfig_info.txpwr_lvl_v4.pwrlvl_11b_11ag_2g4[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power > userconfig_info.txpwr_lvl_v4.pwrlvl_11n_11ac_2g4[i])
+				power = userconfig_info.txpwr_lvl_v4.pwrlvl_11n_11ac_2g4[i];
+	    }
+	    for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v4.pwrlvl_11ax_2g4[i])
+				power = userconfig_info.txpwr_lvl_v4.pwrlvl_11ax_2g4[i];
+	    }
+		for (i = 0; i <= 7; i++){
+			if(power > userconfig_info.txpwr_lvl_v4.pwrlvl_11a_5g[i])
+				power = userconfig_info.txpwr_lvl_v4.pwrlvl_11a_5g[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power > userconfig_info.txpwr_lvl_v4.pwrlvl_11n_11ac_5g[i])
+				power = userconfig_info.txpwr_lvl_v4.pwrlvl_11n_11ac_5g[i];
+	    }
+		for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v4.pwrlvl_11ax_5g[i])
+				power = userconfig_info.txpwr_lvl_v4.pwrlvl_11ax_5g[i];
+		}
+
+		if ((userconfig_info.txpwr_loss.loss_enable_2g4 == 1) ||
+			(userconfig_info.txpwr_loss.loss_enable_5g == 1)) {
+		if (userconfig_info.txpwr_loss.loss_value_2g4 <
+			userconfig_info.txpwr_loss.loss_value_5g)
+			power -= userconfig_info.txpwr_loss.loss_value_5g;
+		else
+			power -= userconfig_info.txpwr_loss.loss_value_2g4;
+		}
+	}
+	else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80 ||
+		g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80N ||
+		g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80WN){
+		for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v3.pwrlvl_11b_11ag_2g4[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11b_11ag_2g4[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power > userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_2g4[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_2g4[i];
+	    }
+	    for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_2g4[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_2g4[i];
+	    }
+		for (i = 4; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v3.pwrlvl_11a_5g[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11a_5g[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power > userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_5g[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11n_11ac_5g[i];
+	    }
+		for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[i])
+				power = userconfig_info.txpwr_lvl_v3.pwrlvl_11ax_5g[i];
+		}
+
+		if ((userconfig_info.txpwr_loss.loss_enable_2g4 == 1) ||
+			(userconfig_info.txpwr_loss.loss_enable_5g == 1)) {
+			if (userconfig_info.txpwr_loss.loss_value_2g4 <
+				userconfig_info.txpwr_loss.loss_value_5g)
+				power -= userconfig_info.txpwr_loss.loss_value_5g;
+			else
+				power -= userconfig_info.txpwr_loss.loss_value_2g4;
+		}
+
+	}else if(g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC || g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DW){
+		for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v2.pwrlvl_11b_11ag_2g4[i])
+				power = userconfig_info.txpwr_lvl_v2.pwrlvl_11b_11ag_2g4[i];
+		}
+	    for (i = 0; i <= 9; i++){
+			if(power > userconfig_info.txpwr_lvl_v2.pwrlvl_11n_11ac_2g4[i])
+				power = userconfig_info.txpwr_lvl_v2.pwrlvl_11n_11ac_2g4[i];
+	    }
+	    for (i = 0; i <= 11; i++){
+			if(power > userconfig_info.txpwr_lvl_v2.pwrlvl_11ax_2g4[i])
+				power = userconfig_info.txpwr_lvl_v2.pwrlvl_11ax_2g4[i];
+	    }
+	}
+
+	printk("%s:txpwr_min:%d \r\n",__func__,power);
+	return power;
+}
+
 s8_l get_txpwr_max(s8_l power)
 {
 	int i=0;
@@ -1012,9 +1094,9 @@ s8_l get_txpwr_max(s8_l power)
 			(userconfig_info.txpwr_loss.loss_enable_5g == 1)) {
 		if (userconfig_info.txpwr_loss.loss_value_2g4 <
 			userconfig_info.txpwr_loss.loss_value_5g)
-			power += userconfig_info.txpwr_loss.loss_value_5g;
+			power -= userconfig_info.txpwr_loss.loss_value_5g;
 		else
-			power += userconfig_info.txpwr_loss.loss_value_2g4;
+			power -= userconfig_info.txpwr_loss.loss_value_2g4;
 		}
 	}
 	else if (g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800D80 ||
@@ -1049,9 +1131,9 @@ s8_l get_txpwr_max(s8_l power)
 			(userconfig_info.txpwr_loss.loss_enable_5g == 1)) {
 			if (userconfig_info.txpwr_loss.loss_value_2g4 <
 				userconfig_info.txpwr_loss.loss_value_5g)
-				power += userconfig_info.txpwr_loss.loss_value_5g;
+				power -= userconfig_info.txpwr_loss.loss_value_5g;
 			else
-				power += userconfig_info.txpwr_loss.loss_value_2g4;
+				power -= userconfig_info.txpwr_loss.loss_value_2g4;
 		}
 
 	}else if(g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DC || g_rwnx_plat->sdiodev->chipid == PRODUCT_ID_AIC8800DW){
@@ -1073,6 +1155,17 @@ s8_l get_txpwr_max(s8_l power)
 	return power;
 }
 
+
+void cmd_set_txpwr_loss_ofst(s8_l value)
+{
+	userconfig_info.txpwr_loss.loss_enable_2g4 = 1;
+	userconfig_info.txpwr_loss.loss_enable_5g = 1;
+
+	userconfig_info.txpwr_loss.loss_value_2g4 = -value;
+	userconfig_info.txpwr_loss.loss_value_5g = -value;
+
+	AICWFDBG(LOGINFO,"%s:value:%d, loss_value_24g=%d loss_value_5g= %d\r\n",      __func__, value, userconfig_info.txpwr_loss.loss_value_2g4,userconfig_info.txpwr_loss.loss_value_5g);
+}
 
 void set_txpwr_loss_ofst(s8_l value)
 {

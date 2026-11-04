@@ -239,12 +239,6 @@ char default_ccode[4] = "00";
 char country_code[4];
 module_param_string(country_code, country_code, 4, 0600);
 
-#define RWNX_REG_RULE(start, end, bw, reg_flags) REG_RULE(start, end, bw, 0, 0, reg_flags)
-struct rwnx_regdomain {
-	char country_code[4];
-	struct ieee80211_regdomain *prRegdRules;
-};
-
 static const int mcs_map_to_rate[4][3] = {
     [PHY_CHNL_BW_20][IEEE80211_VHT_MCS_SUPPORT_0_7] = 65,
     [PHY_CHNL_BW_20][IEEE80211_VHT_MCS_SUPPORT_0_8] = 78,
@@ -282,7 +276,7 @@ void rwnx_get_countrycode_channels(struct wiphy *wiphy,
 	char channel[4];
 #ifdef CONFIG_USE_WIRELESS_EXT
 	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
-	int support_freqs_counter = 0; 
+	int support_freqs_counter = 0;
 #endif
 
 	band_num = NUM_NL80211_BANDS;
@@ -306,16 +300,16 @@ void rwnx_get_countrycode_channels(struct wiphy *wiphy,
 					rwnx_hw->support_freqs[support_freqs_counter++] = center_freq;
 #endif
 					sprintf(channel, "%d",ieee80211_frequency_to_channel(center_freq));
-					
+
 					memcpy(ccode_channels + index_for_channel_list, channel, strlen(channel));
-					
+
 					index_for_channel_list += strlen(channel);
-					
+
 					memcpy(ccode_channels + index_for_channel_list, " ", 1);
-					
+
 					index_for_channel_list += 1;
 					break;
-					
+
 				}
 			}
 		}
@@ -353,12 +347,12 @@ struct ieee80211_regdomain *getRegdomainFromRwnxDB(struct wiphy *wiphy,
 	u8 idx;
 
 	memset(country_code, 0, 4);
-	
+
 	AICWFDBG(LOGINFO, "%s set ccode:%s \r\n", __func__, alpha2);
 
 	idx = 0;
 
-	while (reg_regdb[idx] && idx < reg_regdb_size){
+	while ((idx < reg_regdb_size) && reg_regdb[idx]) {
 		if((reg_regdb[idx]->alpha2[0] == alpha2[0]) &&
 			(reg_regdb[idx]->alpha2[1] == alpha2[1])){
 			memcpy(country_code, alpha2, 2);
@@ -652,7 +646,7 @@ static int rwnx_check_fw_hw_feature(struct rwnx_hw *rwnx_hw,
                rwnx_hw->mod_params->he_on ? "[HE]" : "");
 
 #define PRINT_RWNX_FEAT(feat)                                   \
-    (sys_feat & BIT(MM_FEAT_##feat##_BIT) ? "["#feat"]" : "")
+    ((sys_feat & BIT(MM_FEAT_##feat##_BIT)) ? "["#feat"]" : "")
 
     wiphy_info(wiphy, "FW features: %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
                PRINT_RWNX_FEAT(BCN),
@@ -1218,6 +1212,7 @@ static void rwnx_set_he_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
     he_cap = (struct ieee80211_sta_he_cap *) &rwnx_he_capa.he_cap;
     he_cap->has_he = true;
     he_cap->he_cap_elem.mac_cap_info[2] |= IEEE80211_HE_MAC_CAP2_ALL_ACK;
+	he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2;
     if (rwnx_hw->mod_params->use_2040) {
         he_cap->he_cap_elem.phy_cap_info[0] |=
                         IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;
@@ -1365,6 +1360,11 @@ static void rwnx_set_he_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
     he_cap = (struct ieee80211_sta_he_cap *) &band_2GHz->iftype_data->he_cap;
     he_cap->has_he = true;
     he_cap->he_cap_elem.mac_cap_info[2] |= IEEE80211_HE_MAC_CAP2_ALL_ACK;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_EXT_2;
+#else
+	he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2;
+#endif
     if (rwnx_hw->mod_params->use_2040) {
         he_cap->he_cap_elem.phy_cap_info[0] |=
                         IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;
@@ -1493,6 +1493,11 @@ static void rwnx_set_he_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 	    he_cap = (struct ieee80211_sta_he_cap *) &band_5GHz->iftype_data->he_cap;
 	    he_cap->has_he = true;
 	    he_cap->he_cap_elem.mac_cap_info[2] |= IEEE80211_HE_MAC_CAP2_ALL_ACK;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+		he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_EXT_2;
+#else
+		he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2;
+#endif
 	    if (rwnx_hw->mod_params->use_2040) {
 	        he_cap->he_cap_elem.phy_cap_info[0] |=
 	                        IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;

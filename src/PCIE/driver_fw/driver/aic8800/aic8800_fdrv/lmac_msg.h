@@ -407,6 +407,13 @@ enum mm_msg_tag {
 
 	MM_SET_TXPWR_PER_STA_REQ,
 	MM_SET_TXPWR_PER_STA_CFM,
+	MM_GET_STATISTIC_REQ,
+	MM_GET_STATISTIC_CFM,
+
+	MM_VENDOR_SWCONFIG_IND,
+	MM_FW_PANIC_IND,
+	MM_FW_ASSERT_IND,
+	MM_MCC_STATUS_IND = MM_FW_ASSERT_IND + 100,
 
     /// MAX number of messages
     MM_MAX,
@@ -1886,6 +1893,25 @@ struct mm_apm_staloss_ind
         u8_l mac_addr[6];
 };
 
+struct fw_panic_info_ind
+{
+    uint32_t len;
+    uint8_t info[384];
+};
+
+struct fw_assert_info_ind
+{
+    uint32_t len;
+    uint8_t info[384];
+};
+
+struct mcc_status_ind
+{
+    uint8_t channel_number;
+    uint8_t mcc;
+    uint8_t scc;
+};
+
 enum vendor_hwconfig_tag{
 	ACS_TXOP_REQ = 0,
 	CHANNEL_ACCESS_REQ,
@@ -1989,12 +2015,26 @@ struct mm_get_fw_version_cfm
 
 enum vendor_swconfig_tag
 {
-    BCN_CFG_REQ = 0,
-    TEMP_COMP_SET_REQ,
-    TEMP_COMP_GET_REQ,
-    EXT_FLAGS_SET_REQ,
-    EXT_FLAGS_GET_REQ,
-    EXT_FLAGS_MASK_SET_REQ,
+    BCN_CFG_REQ             = 0,
+    TEMP_COMP_SET_REQ       = 1,
+    TEMP_COMP_GET_REQ       = 2,
+    EXT_FLAGS_SET_REQ       = 3,
+    EXT_FLAGS_GET_REQ       = 4,
+    EXT_FLAGS_MASK_SET_REQ  = 5,
+    DYN_DPD_CAL_RES_SET_REQ = 6,
+    DYN_DPD_CAL_RES_IND     = 7,
+    FORCE_2ANT_ANT_NUM_REQ  = 8,
+    FWLOG_REDIR_ENABLE_REQ  = 9,
+    GTK_REKEY_REQ           = 10,
+    CSI_CFG_REQ             = 11,
+    P2P_STA_MCC_PRI_REQ     = 12,
+
+    // Customized commands
+    SWOW_START              = 256, // 0x100
+    SWOW_SET_PATTERN_REQ    = 257,
+    SWOW_OID_FILTER_SRC_IP  = 258,
+    SWOW_OID_PULSETEST      = 259,
+    SWOW_OID_KEEPALIVE      = 260,
 };
 
 struct mm_set_bcn_cfg_req

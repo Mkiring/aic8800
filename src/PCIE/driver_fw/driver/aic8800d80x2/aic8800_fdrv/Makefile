@@ -105,7 +105,7 @@ CONFIG_FILTER_TCP_ACK =y
 CONFIG_ONE_TXQ = y
 CONFIG_PREALLOC_TXQ = n
 CONFIG_RFKILL_POLL = n
-CONFIG_TEMP_COMP = n
+CONFIG_TEMP_COMP = y
 CONFIG_TEMP_CONTROL = n
 CONFIG_DYNAMIC_PWR = n
 CONFIG_POWER_LIMIT = n
@@ -425,7 +425,8 @@ KDIR  ?= /lib/modules/$(shell uname -r)/build
 PWD   ?= $(shell pwd)
 KVER ?= $(shell uname -r)
 MODDESTDIR ?= /lib/modules/$(KVER)/kernel/drivers/net/wireless/aic8800D80/
-ARCH ?= x86_64
+SUBARCH = $(shell uname -m | sed -e s/i.86/i386/ -e s/armv.l/arm/ -e s/aarch64/arm64/)
+ARCH ?= $(SUBARCH)
 CROSS_COMPILE ?=
 endif
 

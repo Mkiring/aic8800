@@ -811,7 +811,7 @@ int rwnx_plat_bin_fw_upload_2(struct rwnx_hw *rwnx_hw, u32 fw_addr,
                                char *filename)
 {
     int err = 0;
-    unsigned int i = 0, size;
+    int i = 0, size;
 //    u32 *src;
 	u32 *dst = NULL;
 
@@ -860,7 +860,7 @@ int rwnx_plat_bin_fw_upload_2_with_version(struct rwnx_hw *rwnx_hw, u32 fw_addr,
                                char *filename, char *version_str, int version_size)
 {
     int err = 0;
-    unsigned int i = 0, size;
+    int i = 0, size;
     u32 *dst = NULL;
 
     /* Copy the file on the Embedded side */
@@ -882,10 +882,26 @@ int rwnx_plat_bin_fw_upload_2_with_version(struct rwnx_hw *rwnx_hw, u32 fw_addr,
     if (version_str) {
         char *bin_str = (char *)&dst[4];
         int char_idx = 0;
+        int hdr_size = (int)(dst[3] & 0xFFF);
+        if (hdr_size) {
+            bin_str = (char *)&dst[0] + hdr_size;
+        } else {
+            int max_cnt = 512;
+            char *tmp = bin_str;
+            while (max_cnt--) {
+                if (((tmp[0] >= 'a') && (tmp[0] <= 'z')) &&
+                    ((tmp[1] >= 'a') && (tmp[1] <= 'z')) &&
+                    (tmp[2] == ' ') ){
+                    bin_str = tmp;
+                    break;
+                }
+                tmp++;
+            }
+        }
         for (char_idx = 0; char_idx < version_size; char_idx++) {
             version_str[char_idx] = bin_str[char_idx];
             if (bin_str[char_idx] == '\0') {
-                //break;
+                break;
             }
         }
         if (char_idx == version_size) {
@@ -1816,18 +1832,25 @@ static int rwnx_plat_patch_load(struct rwnx_hw *rwnx_hw)
                 AICWFDBG(LOGERROR, "patch upload fail: %d\n", ret);
                 return ret;
             }
+            #ifdef CONFIG_REKEY_OFFLOAD
+            ret = aicwf_plat_rekey_exec_8800d80n(rwnx_hw);
+	    if (ret) {
+                AICWFDBG(LOGERROR, "rekey upload fail: %d\n", ret);
+                return ret;
+            }
+
+            #endif
             ret = aicwf_plat_patch_table_load_8800d80n(rwnx_hw);
             if (ret) {
                 AICWFDBG(LOGERROR, "patch_tbl upload fail: %d\r\n", ret);
                 return ret;
             }
             aicwf_patch_config_8800d80n(rwnx_hw);
-            #if DEF_PATCH_METHOD_VER_2
             aicwf_plat_cinit_exec_8800d80n(rwnx_hw);
             aicwf_plat_calib_exec_8800d80n(rwnx_hw);
-            #endif
         }
         else if (testmode == FW_RFTEST_MODE) {
+            aicwf_plat_cinit_exec_8800d80n(rwnx_hw);
             AICWFDBG(LOGINFO, "%s load rftest bin\n", __func__);
             ret = aicwf_plat_rftest_load_8800d80n(rwnx_hw);
             if (ret) {
@@ -1856,7 +1879,7 @@ static int rwnx_plat_patch_load(struct rwnx_hw *rwnx_hw)
 }
 #endif
 
-
+#if !defined(AICWF_USB_SUPPORT) && !defined(AICWF_SDIO_SUPPORT)
 /**
  * rwnx_platform_reset() - Reset the platform
  *
@@ -1864,11 +1887,10 @@ static int rwnx_plat_patch_load(struct rwnx_hw *rwnx_hw)
  */
 static int rwnx_platform_reset(struct rwnx_plat *rwnx_plat)
 {
-    u32 regval;
-
 #if defined(AICWF_USB_SUPPORT) || defined(AICWF_SDIO_SUPPORT)
     return 0;
-#endif
+#else
+    u32 regval;
 
     /* the doc states that SOFT implies FPGA_B_RESET
      * adding FPGA_B_RESET is clearer */
@@ -1887,6 +1909,7 @@ static int rwnx_platform_reset(struct rwnx_plat *rwnx_plat)
                    RWNX_ADDR_SYSTEM, SYSCTRL_MISC_CNTL_ADDR);
     msleep(100);
     return 0;
+#endif
 }
 
 /**
@@ -1921,6 +1944,7 @@ static void* rwnx_term_save_config(struct rwnx_plat *rwnx_plat)
 
     return res;
 }
+#endif
 
 #if 0
 /**
@@ -3846,10 +3870,10 @@ int rwnx_platform_on(struct rwnx_hw *rwnx_hw, void *config)
 void rwnx_platform_off(struct rwnx_hw *rwnx_hw, void **config)
 {
 #if defined(AICWF_USB_SUPPORT) || defined(AICWF_SDIO_SUPPORT)
-		tasklet_kill(&rwnx_hw->task);
-        rwnx_hw->plat->enabled = false;
-        return ;
-#endif
+    tasklet_kill(&rwnx_hw->task);
+    rwnx_hw->plat->enabled = false;
+    return ;
+#else
 
     if (!rwnx_hw->plat->enabled) {
         if (config)
@@ -3876,6 +3900,7 @@ void rwnx_platform_off(struct rwnx_hw *rwnx_hw, void **config)
     rwnx_platform_reset(rwnx_hw->plat);
 
     rwnx_hw->plat->enabled = false;
+#endif
 }
 
 /**
@@ -3961,11 +3986,11 @@ struct device *rwnx_platform_get_dev(struct rwnx_plat *rwnx_plat)
 {
 #ifdef AICWF_SDIO_SUPPORT
 	return rwnx_plat->sdiodev->dev;
-#endif
-#ifdef AICWF_USB_SUPPORT
+#elif defined( AICWF_USB_SUPPORT)
     return rwnx_plat->usbdev->dev;
-#endif
+#else
     return &(rwnx_plat->pci_dev->dev);
+#endif
 }
 
 

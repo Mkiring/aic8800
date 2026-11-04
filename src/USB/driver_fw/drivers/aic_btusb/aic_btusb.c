@@ -92,6 +92,17 @@ module_param(testmode, int, 0660);
 module_param(btdual, int, 0660);
 module_param(bt_support, int, 0660);
 
+#define BT_MAC_INFO_MAX    28
+/*
+len 21 :  index[0] mac[0] mac[1] mac[2] mac[3] mac[4] mac[5]
+          index[1] mac[0] mac[1] mac[2] mac[3] mac[4] mac[5]
+          index[2] mac[0] mac[1] mac[2] mac[3] mac[4] mac[5]
+          index[3] mac[0] mac[1] mac[2] mac[3] mac[4] mac[5]
+*/
+static int bt_mac_info[BT_MAC_INFO_MAX] = {0};
+static int n_para;
+module_param_array(bt_mac_info , int , &n_para , 0660); 
+
 struct btusb_data {
     struct hci_dev       *hdev;
     struct usb_device    *udev;
@@ -415,6 +426,284 @@ static enum CODEC_TYPE codec_type = CODEC_CVSD;
 static void set_select_msbc(enum CODEC_TYPE type);
 static enum CODEC_TYPE check_select_msbc(void);
 int send_hci_cmd(firmware_info *fw_info);
+#if CONFIG_BLUEDROID
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
+#include <linux/string.h>
+
+#define MAX_MACS 4
+#define MAC_LEN 6
+
+struct mac_list {
+    unsigned char macs[MAX_MACS][MAC_LEN];
+    int count;
+};
+
+struct mac_list *parse_multiple_macs(const char *mac_str)
+{
+    struct mac_list *list;
+    int mac_index = 0, char_index = 0;
+    char temp[18] = {0};
+    int i = 0;
+    
+    list = kmalloc(sizeof(struct mac_list), GFP_KERNEL);
+    if (!list) return NULL;
+    
+    list->count = 0;
+    
+    while (mac_str[char_index] && mac_index < MAX_MACS) {
+        int temp_idx = 0;
+        
+        // 提取单个MAC
+        while (mac_str[char_index] && mac_str[char_index] != ';' && temp_idx < 17) {
+            temp[temp_idx++] = mac_str[char_index++];
+        }
+        temp[temp_idx] = '\0';
+        
+        if (temp_idx == 17) { // 有效的MAC长度
+            // 转换逻辑（同上）
+            int byte_idx = 0;
+            for (i = 0; i < 17 && byte_idx < 6; ) {
+                if (temp[i] == ':') { i++; continue; }
+                
+                int hi = (temp[i] >= 'A') ? (temp[i] - 'A' + 10) : (temp[i] - '0');
+                int lo = (temp[i+1] >= 'A') ? (temp[i+1] - 'A' + 10) : (temp[i+1] - '0');
+                list->macs[mac_index][byte_idx++] = (hi << 4) | lo;
+                i += 2;
+            }
+            mac_index++;
+        }
+        
+        if (mac_str[char_index] == ';') char_index++; // 跳过分号
+    }
+    
+    list->count = mac_index;
+    return list;
+}
+
+/* Global parameters for bt usb str array char driver */
+#define AA_CHAR_DEVICE_NAME "aic_array"
+struct mutex aachr_mutex;
+static wait_queue_head_t aachr_read_wait;
+static int aa_char_dev_registered;
+static dev_t aa_devid; /* bt char device number */
+static struct cdev aa_char_dev; /* bt character device structure */
+static struct class *aa_char_class; /* device class for usb char driver */
+
+static unsigned char bt_mac_info_array[BT_MAC_INFO_MAX];
+
+static inline ssize_t aa_put_user(struct sk_buff *skb,
+        char __user *buf, int count)
+{
+    char __user *ptr = buf;
+    int len = min_t(unsigned int, skb->len, count);
+
+    if (copy_to_user(ptr, skb->data, len))
+        return -EFAULT;
+
+    return len;
+}
+
+static int aachr_open(struct inode *inode_p, struct file  *file_p)
+{
+    AICBT_INFO("%s: BT usb aic array char device is opening", __func__);
+    /* Not open unless wanna tracing log */
+    /* trace_printk("%s: open....\n", __func__); */
+    /*
+     * As bt device is not re-opened when hotplugged out, we cannot
+     * trust on file's private data(may be null) when other file ops
+     * are invoked.
+     */
+    return nonseekable_open(inode_p, file_p);
+}
+
+static int aachr_close(struct inode  *inode_p, struct file   *file_p)
+{
+    AICBT_INFO("%s: BT usb aic array char device is closing", __func__);
+    /* Not open unless wanna tracing log */
+    /* trace_printk("%s: close....\n", __func__); */
+    return 0;
+}
+
+static ssize_t aachr_read(struct file *file_p,
+        char __user *buf_p,
+        size_t count,
+        loff_t *pos_p)
+{
+    ssize_t ret = -1;
+    return ret;
+}
+
+static ssize_t aachr_write(struct file *file_p,
+        const char __user *buf_p,
+        size_t count,
+        loff_t *pos_p)
+{
+    int i = 0;
+    AICBT_INFO("%s,len %d", __func__,count);
+    char multi_mac[256];
+    struct mac_list *bt_mac=NULL;
+    memset(bt_mac_info_array,0,BT_MAC_INFO_MAX);
+
+
+    if (count > 72)
+        return -EINVAL;
+
+    if (copy_from_user((char *)multi_mac, buf_p, count)) {
+        AICBT_ERR("%s: Failed to get data from user space", __func__);
+        return -EFAULT;
+    }
+    AICBT_INFO("multi_mac is :%s\n",multi_mac);
+    bt_mac = parse_multiple_macs(multi_mac);
+    if(bt_mac){
+        for(i=0;i< bt_mac->count;i++){
+            bt_mac_info_array[i*7] = 1;
+            memcpy(&bt_mac_info_array[i*7+1],bt_mac->macs[i],MAC_LEN);
+        }
+        kfree(bt_mac);
+    }else{
+        return 0;
+    }
+    for(i=0;i<BT_MAC_INFO_MAX;i++){
+        AICBT_INFO("0x%x", bt_mac_info_array[i]);
+    }
+    AICBT_INFO("\n");
+    return count;
+}
+
+static unsigned int aachr_poll(struct file *file_p, poll_table *wait)
+{
+    //AICBT_DBG("%s: BT usb char device is polling", __func__);
+
+    if(!aa_char_dev_registered) {
+        AICBT_ERR("%s: char device has not registered!", __func__);
+        return POLLERR | POLLHUP;
+    }
+
+    poll_wait(file_p, &aachr_read_wait, wait);
+    return POLLOUT | POLLWRNORM;
+}
+static long aachr_ioctl(struct file *file_p,unsigned int cmd, unsigned long arg)
+{
+    int ret = 0;
+
+    if(!aa_char_dev_registered) {
+        return -ENODEV;
+    }
+
+    AICBT_INFO(" btchr_ioctl  with Cmd:%d",cmd);
+    switch (cmd) {
+        default:
+            AICBT_ERR("%s:Failed with wrong Cmd:%d",__func__,cmd);
+            goto failed;
+        }
+failed:
+    return ret;
+
+}
+
+#ifdef CONFIG_PLATFORM_UBUNTU//AIDEN
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
+typedef u32		compat_uptr_t;
+static inline void __user *compat_ptr(compat_uptr_t uptr)
+{
+	return (void __user *)(unsigned long)uptr;
+}
+#endif
+#endif
+
+#ifdef CONFIG_COMPAT
+static long compat_aachr_ioctl (struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    AICBT_DBG("%s: enter",__func__);
+    return aachr_ioctl(filp, cmd, (unsigned long) compat_ptr(arg));
+}
+#endif
+static struct file_operations aa_chrdev_ops  = {
+    open    :    aachr_open,
+    release    :    aachr_close,
+    read    :    aachr_read,
+    write    :    aachr_write,
+    poll    :    aachr_poll,
+    unlocked_ioctl   :   aachr_ioctl,
+#ifdef CONFIG_COMPAT
+    compat_ioctl :  compat_aachr_ioctl,
+#endif
+};
+
+static int aachr_init(void)
+{
+    int res = 0;
+    struct device *dev;
+#ifdef CONFIG_PLATFORM_MTK_LINUX
+    aa_devid = MKDEV(112, 0);
+#endif
+    AICBT_INFO("Register usb aic array char device interface for BT driver");
+    /*
+     * btchr mutex is used to sync between
+     * 1) downloading patch and opening bt char driver
+     * 2) the file operations of bt char driver
+     */
+    mutex_init(&aachr_mutex);
+    init_waitqueue_head(&aachr_read_wait);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+    aa_char_class = class_create(AA_CHAR_DEVICE_NAME);
+#else
+    aa_char_class = class_create(THIS_MODULE, AA_CHAR_DEVICE_NAME);
+#endif
+    if (IS_ERR(aa_char_class)) {
+        AICBT_ERR("Failed to create aa char class");
+        return PTR_ERR(aa_char_class);
+    }
+#ifndef CONFIG_PLATFORM_MTK_LINUX
+    res = alloc_chrdev_region(&aa_devid, 0, 1, AA_CHAR_DEVICE_NAME);
+#else
+	res = register_chrdev_region(aa_devid, 1, AA_CHAR_DEVICE_NAME);
+#endif
+    if (res < 0) {
+        AICBT_ERR("Failed to allocate bt char device");
+        goto err_alloc;
+    }
+
+    dev = device_create(aa_char_class, NULL, aa_devid, NULL, AA_CHAR_DEVICE_NAME);
+    if (IS_ERR(dev)) {
+        AICBT_ERR("Failed to create bt char device");
+        res = PTR_ERR(dev);
+        goto err_create;
+    }
+
+    cdev_init(&aa_char_dev, &aa_chrdev_ops);
+    res = cdev_add(&aa_char_dev, aa_devid, 1);
+    if (res < 0) {
+        AICBT_ERR("Failed to add aa char device");
+        goto err_add;
+    }
+    memset(bt_mac_info_array,0,BT_MAC_INFO_MAX);
+    return 0;
+
+err_add:
+    device_destroy(aa_char_class, aa_devid);
+err_create:
+    unregister_chrdev_region(aa_devid, 1);
+err_alloc:
+    class_destroy(aa_char_class);
+    return res;
+}
+
+static void aachr_exit(void)
+{
+    AICBT_INFO("Unregister usb aic array char device interface for BT driver");
+
+    device_destroy(aa_char_class, aa_devid);
+    cdev_del(&aa_char_dev);
+    unregister_chrdev_region(aa_devid, 1);
+    class_destroy(aa_char_class);
+
+    return;
+}
+#endif
 
 
 #if CONFIG_BLUEDROID
@@ -1516,7 +1805,7 @@ static long btchr_ioctl(struct file *file_p,unsigned int cmd, unsigned long arg)
 }
 
 #ifdef CONFIG_PLATFORM_UBUNTU//AIDEN
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
 typedef u32		compat_uptr_t;
 static inline void __user *compat_ptr(compat_uptr_t uptr)
 {
@@ -1717,6 +2006,124 @@ static void rcv_ble_wakeup_event(firmware_info *fw_info)
         }
     }
 }
+
+int set_bt_wakeup_sub_param(firmware_info *fw_info)
+{
+    int ret_val = 0;
+    int ad_filter_idx = 0;
+    uint8_t i = 0;
+    ble_wakeup_wave_param_t* wakeup_wave_param = NULL;
+    AICBT_INFO("%s", __func__);
+
+/*
+    data and ad_data_filter_mask instructions for use
+    ex.
+    data[18] = {0x46,0x00,0x00,0xff,0xff,0xff,0xff,0xff,0xff,0x30,0xff,0xff,0xff,0x43,0x52,0x45,0x4c,0x42};
+    mask = 1100 0000 0111 1111 1100 0000 0000 0000 = 0xc07fc000
+
+    data  = 0x46,0x00,0x00,0xff,0xff,0xff,0xff,0xff,0xff,0x30,0xff,0xff,0xff,0x43,0x52,0x45,0x4c,0x42
+    mask =  1      1       0     0     0    0     0     0    0     1      1     1    1    1      1      1      1      1      0     0...... fill 0
+
+    data & mask = "0x46 0x00" 0x00 0x00 0x00 0x00 0x00 0x00 0x00 "0x30 0xff 0xff 0x43 0x52 0x45 0x4c 0x42"
+    using data & mask value condition to wakeup host_wake_bt gpio
+*/
+    wakeup_wave_param = (ble_wakeup_wave_param_t *)kmalloc(sizeof(ble_wakeup_wave_param_t), GFP_KERNEL);
+
+    printk("%s ble scan wakeup wave\r\n", __func__);
+
+    memset(wakeup_wave_param, 0, sizeof(ble_wakeup_wave_param_t));
+    /********************************************************************/
+    //MAX_AD_FILTER_NUM=5 :num 0
+    {
+        const uint8_t data[2] = {0x00,0x1};//遥控器 Power 键
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len = 3;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_type = 0xff;
+        memcpy(wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data, data,wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len-1);// 1100 0000 0111 1111 1100 0000 0000 0000 //0xc07fc000
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data_mask = 0xc0000000;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_role = ROLE_COMBO|(COMBO_0<<4);
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_filter_gpio_waveform=0xFE00;
+        ad_filter_idx++;
+    }
+    /********************************************************************/
+    //MAX_AD_FILTER_NUM=5 :num 1
+    {
+        const uint8_t data[2] = {0xFE,0x01};//Netflix键
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len = 3;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_type = 0xff;
+        memcpy(wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data, data,wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len-1);// 1100 0000 0000 0000 0000 0000 0000 0000 //0xc0000000
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data_mask = 0xc0000000;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_role = ROLE_COMBO|(COMBO_0<<4);
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_filter_gpio_waveform=0xFF4A;
+        ad_filter_idx++;
+	}
+    /********************************************************************/
+    //MAX_AD_FILTER_NUM=5 :num 2
+    {
+        const uint8_t data[2] = {0xFD,0x1};//LiveTV键
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len = 3;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_type = 0xff;
+        memcpy(wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data, data,wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len-1);// 1100 0000 0000 0000 0000 0000 0000 0000 //0xc0000000
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data_mask = 0xc0000000;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_role = ROLE_COMBO|(COMBO_0<<4);
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_filter_gpio_waveform=0xFF42;
+        ad_filter_idx++;
+    }
+    /********************************************************************/
+    //MAX_AD_FILTER_NUM=5 :num 3
+    {
+        const uint8_t data[2] = {0xFC,0x1};//GTV FreeTV LiveTV键
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len = 3;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_type = 0xff;
+        memcpy(wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data, data,wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len-1);// 1100 0000 0000 0000 0000 0000 0000 0000 //0xc0000000
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data_mask = 0xc0000000;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_role = ROLE_COMBO|(COMBO_0<<4);
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_filter_gpio_waveform=0xAB3A;
+        ad_filter_idx++;
+    }
+    {
+        const uint8_t data[16] = {0x00,0x01,0x02,0x01,0x05,0x03,0xff,0x00,0x01,0xff,0xff,0xff,0xff,0xff,0xff,0x00};//小爱音响 键
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len = 0x11;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_type = 0x06;
+        memcpy(wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data, data,wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len-1);// 1111 1111 1000 0001 0000 0000 0000 0000 //0xff810000
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data_mask = 0xff810000;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_filter_gpio_waveform=0xFAAA;
+        ad_filter_idx++;
+    }
+    {
+        const uint8_t data[16] = {0x00,0x01,0x02,0x01,0x05,0x03,0xff,0x00,0x01,0xff,0xff,0xff,0xff,0xff,0xff,0x00};//小爱音响 键
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len = 0x11;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_type = 0x07;
+        memcpy(wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data, data,wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_len-1);// 1111 1111 1000 0001 0000 0000 0000 0000 //0xff810000
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_data_mask = 0xff810000;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_wave_param->ad_filter_wave[ad_filter_idx].ad_filter_gpio_waveform=0xFAAA;
+        ad_filter_idx++;
+    }
+    AICBT_ERR("%s: ad_filter_idx = %d",__func__, ad_filter_idx);
+    for(i = 0;i<ad_filter_idx;i++){
+        fw_info->cmd_hdr->opcode = cpu_to_le16(HCI_VSC_SET_ADFILTER_WAVE_PT_CMD);
+        fw_info->cmd_hdr->plen = sizeof(wakeup_ad_filter_wave_t)+1;
+        fw_info->pkt_len = CMD_HDR_LEN + sizeof(wakeup_ad_filter_wave_t)+1;
+        fw_info->req_para[0] = i;
+        memcpy(&fw_info->req_para[1],&wakeup_wave_param->ad_filter_wave[i],sizeof(wakeup_ad_filter_wave_t));
+        ret_val = send_hci_cmd(fw_info);
+        if (ret_val < 0) {
+            AICBT_ERR("%s: Failed to send bt wakeup param, errno %d",
+                    __func__, ret_val);
+            return ret_val;
+        }
+    }
+    kfree(wakeup_wave_param);
+    return ret_val;
+}
+
 static int set_bt_ad_filetr_en_param(firmware_info *fw_info)
 {
     int ret_val;
@@ -1732,21 +2139,23 @@ static int set_bt_ad_filetr_en_param(firmware_info *fw_info)
                 __func__, ret_val);
         return ret_val;
     }
-
+#if 0
     ret_val = rcv_hci_evt_in_pm(fw_info,0);
     if (ret_val < 0) {
         AICBT_ERR("%s: Failed to receive bt event, errno %d",
                 __func__, ret_val);
         return ret_val;
     }
-
+#endif
     return ret_val;
 }
 
 static int set_bt_wakeup_param(firmware_info *fw_info)
 {
     int ret_val;
+    int ad_filter_idx = 0;
     struct ble_wakeup_param_t* wakeup_param = NULL;
+    int i;
     AICBT_INFO("%s", __func__);
 
 /*
@@ -1764,127 +2173,350 @@ static int set_bt_wakeup_param(firmware_info *fw_info)
     wakeup_param = (struct ble_wakeup_param_t*)kmalloc(sizeof(struct ble_wakeup_param_t), GFP_KERNEL);
 
     printk("%s ble scan wakeup \r\n", __func__);
-
+    for(i = 0; i < n_para; i++) //n_para的值等于bt_mac_info输入的个数
+        printk("bt_mac_info[%d] : %d \n", i, bt_mac_info[i]);
+    for(i = 0; i < BT_MAC_INFO_MAX; i++) //n_para的值等于bt_mac_info输入的个数
+        printk("bt_mac_info_array[%d] : %d \n", i, bt_mac_info_array[i]);
     memset(wakeup_param, 0, sizeof(struct ble_wakeup_param_t));
     wakeup_param->magic_num = 0x53454C42;//magic_num
-    wakeup_param->delay_scan_to = 1000;//delay start scan time(ms)
-    wakeup_param->reboot_to = 0x800003e8;//reboot time(ms):   bit31: 1, ic will reboot when timer is handle; 0 , do not reboot 
+#ifdef CONFIG_WOBLE_WAVEFORM
+    wakeup_param->delay_scan_to = 0x000003e8;//delay start scan time(ms)
+    wakeup_param->reboot_to = 0x800000C8;//reboot time(ms):   bit31: 1, ic will reboot when timer is handle; 0 , do not reboot 
                                    // bit0~30 : time(ms)
+#else
+    wakeup_param->delay_scan_to = 0x01f703e8;//delay start scan time(ms)
+    wakeup_param->reboot_to = 0x800001f7;//reboot time(ms):   bit31: 1, ic will reboot when timer is handle; 0 , do not reboot 
+                                   // bit0~30 : time(ms)
+#endif
     /******************************************************************/
+#if 0
     ///gpio_trigger_idx : 0    if wakeup_param->gpio_dft_lvl[0]=0xfe,this idx will be invalid.
     wakeup_param->gpio_num[0] = 2;////default select gpiob2 for fw_wakeup_host
     wakeup_param->gpio_dft_lvl[0] = 0;////0:defalut pull down,  1:default pull up
+#else//18 used for 8800D40N ,18 is gpiob2 ,19 is gpiob3 
+    ///gpio_trigger_idx : 0    if wakeup_param->gpio_dft_lvl[0]=0xfe,this idx will be invalid.
+    wakeup_param->gpio_num[0] = 18;////default select gpiob2 for fw_wakeup_host
+    wakeup_param->gpio_dft_lvl[0] = 1;////0:defalut pull down,  1:default pull up
+#endif
     ///gpio_trigger_idx : 1    if wakeup_param->gpio_dft_lvl[1]=0xfe,this idx will be invalid.
-    wakeup_param->gpio_num[1] = 3;////default select gpiob2 for fw_wakeup_host
-    wakeup_param->gpio_dft_lvl[1] = 1;////0:defalut pull down,  1:default pull up
+    wakeup_param->gpio_num[1] = 0xff;////default select gpiob2 for fw_wakeup_host
+    wakeup_param->gpio_dft_lvl[1] = 0xff;////0:defalut pull down,  1:default pull up
     /********************************************************************/
     /********************************************************************/
-    //MAX_AD_FILTER_NUM=5 :num 0
+#ifdef CONFIG_WOBLE_WAVEFORM
+    //MAX_AD_FILTER_NUM=4 :num 0
     {
-        const uint8_t data[11] = {0x59,0x4B,0x32,0x42,0x41,0x5F,0x54,0x45,0x53,0x54,0x33};
-        wakeup_param->ad_filter[0].ad_len = 12;
-        wakeup_param->ad_filter[0].ad_type = 0x09;
-        memcpy(wakeup_param->ad_filter[0].ad_data, data,wakeup_param->ad_filter[0].ad_len-1);// 1111 1111 1110 0000 0000 0000 0000 0000 //0xffe00000
-        wakeup_param->ad_filter[0].ad_data_mask = 0xffe00000;
-        wakeup_param->ad_filter[0].ad_role = ROLE_COMBO|(COMBO_0<<4);
-        wakeup_param->ad_filter[0].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
-		/********************************************************************/
-		/*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
-												wl_addr have value xx: only remote addr in white_list_addr will use ad filter
-		********************************************************************/
-		wakeup_param->ad_filter[0].wl_addr.addr[0] = 0;
-		wakeup_param->ad_filter[0].wl_addr.addr[1] = 0;
-		wakeup_param->ad_filter[0].wl_addr.addr[2] = 0;
-		wakeup_param->ad_filter[0].wl_addr.addr[3] = 0;
-		wakeup_param->ad_filter[0].wl_addr.addr[4] = 0;
-		wakeup_param->ad_filter[0].wl_addr.addr[5] = 0;
-	}
+        const uint8_t data[5] = {'M','I',' ','R','C'};
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 0x06;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x08;
+        memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1111 1111 1110 0000 0000 0000 0000 0000 //0xffe00000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xf8000000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_COMBO | (COMBO_0<<4);
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+
+        /********************************************************************/
+        /*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
+          wl_addr have value xx: only remote addr in white_list_addr will use ad filter
+        ********************************************************************/
+        if(bt_mac_info_array[0]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[1];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[2];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[3];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[4];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[5];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[6];
+        }else if(bt_mac_info[0]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[1];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[2];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[3];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[4];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[5];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[6];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
+    }
     /********************************************************************/
-    //MAX_AD_FILTER_NUM=5 :num 1
+    //MAX_AD_FILTER_NUM=4 :num 1
     {
         const uint8_t data[2] = {0x12,0x18};
-        wakeup_param->ad_filter[1].ad_len = 3;
-        wakeup_param->ad_filter[1].ad_type = 0x3;
-        memcpy(wakeup_param->ad_filter[1].ad_data, data,wakeup_param->ad_filter[1].ad_len-1);// 1100 0000 0000 0000 0000 0000 0000 0000 //0xc0000000
-        wakeup_param->ad_filter[1].ad_data_mask = 0xc0000000;
-        wakeup_param->ad_filter[1].ad_role = ROLE_COMBO|(COMBO_0<<4);
-        wakeup_param->ad_filter[1].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 3;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x3;
+        memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1100 0000 0000 0000 0000 0000 0000 0000 //0xc0000000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xc0000000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_COMBO|(COMBO_0<<4);
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
 		/********************************************************************/
 		/*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
 												wl_addr have value xx: only remote addr in white_list_addr will use ad filter
 		********************************************************************/
-		wakeup_param->ad_filter[1].wl_addr.addr[0] = 0;
-		wakeup_param->ad_filter[1].wl_addr.addr[1] = 0;
-		wakeup_param->ad_filter[1].wl_addr.addr[2] = 0;
-		wakeup_param->ad_filter[1].wl_addr.addr[3] = 0;
-		wakeup_param->ad_filter[1].wl_addr.addr[4] = 0;
-		wakeup_param->ad_filter[1].wl_addr.addr[5] = 0;
+		wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+		wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+		wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+		wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+		wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+		wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        if(bt_mac_info_array[7]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[8];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[9];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[10];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[11];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[12];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[13];
+        }else if(bt_mac_info[7]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[8];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[9];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[10];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[11];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[12];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[13];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
 	}
     /********************************************************************/
-    //MAX_AD_FILTER_NUM=5 :num 2
+    //MAX_AD_FILTER_NUM=4 :num 2
     {
+        const uint8_t data[16] = {0x00,0x01,0x02,0x01,0x05,0x03,0xff,0x00,0x01,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 0x11;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x06;
+        memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1111 1111 1000 0001 0000 0000 0000 0000 //0xff810000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xff810000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        /********************************************************************/
+        /*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
+          wl_addr have value xx: only remote addr in white_list_addr will use ad filter
+        ********************************************************************/
+        if(bt_mac_info_array[14]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[15];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[16];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[17];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[18];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[19];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[20];
+        }else if(bt_mac_info[14]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[15];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[16];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[17];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[18];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[19];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[20];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
+    }
+    /********************************************************************/
+    //MAX_AD_FILTER_NUM=4 :num 3
+    {
+        const uint8_t data[16] = {0x00,0x01,0x02,0x01,0x05,0x03,0xff,0x00,0x01,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 0x11;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x07;
+        memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1111 1111 1000 0001 0000 0000 0000 0000 //0xff810000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xff810000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        /********************************************************************/
+        /*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
+          wl_addr have value xx: only remote addr in white_list_addr will use ad filter
+        ********************************************************************/
+        if(bt_mac_info_array[21]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[22];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[23];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[24];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[25];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[26];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[27];
+        }else if(bt_mac_info[21]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[22];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[23];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[24];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[25];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[26];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[27];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
+    }
+#else
+    //MAX_AD_FILTER_NUM=4 :num 0
+    {
+        const uint8_t data[14] = {0x75,0x00, 0x42, 0x25, 0x20,0x01, 0x80, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
         //const uint8_t data[11] = {0x59,0x4B,0x32,0x42,0x41,0x5F,0x54,0x45,0x53,0x54,0x33};
-        wakeup_param->ad_filter[2].ad_len = 0;
-        wakeup_param->ad_filter[2].ad_type = 0;
-        //memcpy(wakeup_param->ad_filter[2].ad_data, data,wakeup_param->ad_filter[2].ad_len-1);// 1100 0000 0111 1111 1100 0000 0000 0000 //0xc07fc000
-        wakeup_param->ad_filter[2].ad_data_mask = 0;
-        wakeup_param->ad_filter[2].ad_role = ROLE_ONLY;
-        wakeup_param->ad_filter[2].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 15;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0xff;
+        memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1111 1010 1111 1100 0000 0000 0000 0000 //0xfafc0000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xfafc0000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+
+        /********************************************************************/
+        /*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
+          wl_addr have value xx: only remote addr in white_list_addr will use ad filter
+        ********************************************************************/
+        if(bt_mac_info_array[0]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[1];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[2];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[3];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[4];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[5];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[6];
+        }else if(bt_mac_info[0]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[1];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[2];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[3];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[4];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[5];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[6];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
+    }
+    /********************************************************************/
+    //MAX_AD_FILTER_NUM=4 :num 1
+    {
+        const uint8_t data[2] = {0x12,0x18};
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 0;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x3;
+        //memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1100 0000 0000 0000 0000 0000 0000 0000 //0xc0000000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xc0000000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_COMBO|(COMBO_0<<4);
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
 		/********************************************************************/
 		/*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
 												wl_addr have value xx: only remote addr in white_list_addr will use ad filter
 		********************************************************************/
-		wakeup_param->ad_filter[2].wl_addr.addr[0] = 0;
-		wakeup_param->ad_filter[2].wl_addr.addr[1] = 0;
-		wakeup_param->ad_filter[2].wl_addr.addr[2] = 0;
-		wakeup_param->ad_filter[2].wl_addr.addr[3] = 0;
-		wakeup_param->ad_filter[2].wl_addr.addr[4] = 0;
-		wakeup_param->ad_filter[2].wl_addr.addr[5] = 0;
+        if(bt_mac_info_array[7]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[8];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[9];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[10];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[11];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[12];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[13];
+        }else if(bt_mac_info[7]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[8];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[9];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[10];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[11];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[12];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[13];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
 	}
     /********************************************************************/
-    //MAX_AD_FILTER_NUM=5 :num 3
+    //MAX_AD_FILTER_NUM=4 :num 2
     {
-        //const uint8_t data[11] = {0x59,0x4B,0x32,0x42,0x41,0x5F,0x54,0x45,0x53,0x54,0x33};
-        wakeup_param->ad_filter[3].ad_len = 0;
-        wakeup_param->ad_filter[3].ad_type = 0;
-        //memcpy(wakeup_param->ad_filter[2].ad_data, data,wakeup_param->ad_filter[2].ad_len-1);// 1100 0000 0111 1111 1100 0000 0000 0000 //0xc07fc000
-        wakeup_param->ad_filter[3].ad_data_mask = 0;
-        wakeup_param->ad_filter[3].ad_role = ROLE_COMBO|(COMBO_1<<4);
-        wakeup_param->ad_filter[3].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
-		/********************************************************************/
-		/*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
-												wl_addr have value xx: only remote addr in white_list_addr will use ad filter
-		********************************************************************/
-		wakeup_param->ad_filter[3].wl_addr.addr[0] = 0;
-		wakeup_param->ad_filter[3].wl_addr.addr[1] = 0;
-		wakeup_param->ad_filter[3].wl_addr.addr[2] = 0;
-		wakeup_param->ad_filter[3].wl_addr.addr[3] = 0;
-		wakeup_param->ad_filter[3].wl_addr.addr[4] = 0;
-		wakeup_param->ad_filter[3].wl_addr.addr[5] = 0;
-	}
-	#if 0
+        const uint8_t data[16] = {0x00,0x01,0x02,0x01,0x05,0x03,0xff,0x00,0x01,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 0;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x06;
+        //memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1111 1111 1000 0001 0000 0000 0000 0000 //0xff810000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xff810000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        /********************************************************************/
+        /*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
+          wl_addr have value xx: only remote addr in white_list_addr will use ad filter
+        ********************************************************************/
+        if(bt_mac_info_array[14]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[15];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[16];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[17];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[18];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[19];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[20];
+        }else if(bt_mac_info[14]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[15];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[16];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[17];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[18];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[19];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[20];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
+    }
     /********************************************************************/
-    //MAX_AD_FILTER_NUM=5 :num 4
+    //MAX_AD_FILTER_NUM=4 :num 3
     {
-        const uint8_t data[11] = {0x59,0x4B,0x32,0x42,0x41,0x5F,0x54,0x45,0x53,0x54,0x33};
-        wakeup_param->ad_filter[4].ad_len = 0;
-        wakeup_param->ad_filter[4].ad_type = 0x09;
-        //memcpy(wakeup_param->ad_filter[4].ad_data, data,wakeup_param->ad_filter[4].ad_len-1);// 1111 1111 1110 0000 0000 0000 0000 0000 //0xffe00000
-        wakeup_param->ad_filter[4].ad_data_mask = 0xffe00000;
-        wakeup_param->ad_filter[4].ad_role = ROLE_COMBO|(COMBO_1<<4);
-        wakeup_param->ad_filter[4].gpio_trigger_idx = TG_IDX_0|TG_IDX_1;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
-		/********************************************************************/
-		/*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
-												wl_addr have value xx: only remote addr in white_list_addr will use ad filter
-		********************************************************************/
-		wakeup_param->ad_filter[4].wl_addr.addr[0] = 0;
-		wakeup_param->ad_filter[4].wl_addr.addr[1] = 0;
-		wakeup_param->ad_filter[4].wl_addr.addr[2] = 0;
-		wakeup_param->ad_filter[4].wl_addr.addr[3] = 0;
-		wakeup_param->ad_filter[4].wl_addr.addr[4] = 0;
-		wakeup_param->ad_filter[4].wl_addr.addr[5] = 0;
-	}
-	#endif
+        const uint8_t data[16] = {0x00,0x01,0x02,0x01,0x05,0x03,0xff,0x00,0x01,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
+        wakeup_param->ad_filter[ad_filter_idx].ad_len = 0;
+        wakeup_param->ad_filter[ad_filter_idx].ad_type = 0x07;
+        //memcpy(wakeup_param->ad_filter[ad_filter_idx].ad_data, data,wakeup_param->ad_filter[ad_filter_idx].ad_len-1);// 1111 1111 1000 0001 0000 0000 0000 0000 //0xff810000
+        wakeup_param->ad_filter[ad_filter_idx].ad_data_mask = 0xff810000;
+        wakeup_param->ad_filter[ad_filter_idx].ad_role = ROLE_ONLY;
+        wakeup_param->ad_filter[ad_filter_idx].gpio_trigger_idx = TG_IDX_0;//0: match for wakeup_param->gpio_num[0]       1: match for wakeup_param->gpio_num[1]
+        /********************************************************************/
+        /*enable white list addr for paired remote ble addr. if all 0: all addr will use ad filter
+          wl_addr have value xx: only remote addr in white_list_addr will use ad filter
+        ********************************************************************/
+        if(bt_mac_info_array[21]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info_array[22];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info_array[23];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info_array[24];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info_array[25];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info_array[26];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info_array[27];
+        }else if(bt_mac_info[21]){
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = bt_mac_info[22];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = bt_mac_info[23];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = bt_mac_info[24];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = bt_mac_info[25];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = bt_mac_info[26];
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = bt_mac_info[27];
+        }else{
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[0] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[1] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[2] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[3] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[4] = 0;
+            wakeup_param->ad_filter[ad_filter_idx].wl_addr.addr[5] = 0;
+        }
+        ad_filter_idx++;
+    }
+#endif
     fw_info->cmd_hdr->opcode = cpu_to_le16(HCI_VSC_SET_ADFILTER_PT_CMD);
     fw_info->cmd_hdr->plen = sizeof(struct ble_wakeup_param_t);
     fw_info->pkt_len = CMD_HDR_LEN + sizeof(struct ble_wakeup_param_t);
@@ -1895,14 +2527,15 @@ static int set_bt_wakeup_param(firmware_info *fw_info)
                 __func__, ret_val);
         return ret_val;
     }
-
+#if 0
     ret_val = rcv_hci_evt_in_pm(fw_info,0);
     if (ret_val < 0) {
         AICBT_ERR("%s: Failed to receive bt event, errno %d",
                 __func__, ret_val);
         return ret_val;
     }
-
+#endif
+    kfree(wakeup_param);
     return ret_val;
 }
 
@@ -2254,6 +2887,7 @@ static int aic_handle_cmd(struct sk_buff *skb)
         case HCI_OP_LE_Set_Extended_Scan_Enable:
             {
                 u8 scan_en = opcode[3];
+                printk("%s,0x%x,%x\n",__func__,command,scan_en);
                 if(scan_en){
                     ble_scan_en[0]=1;
                     memcpy(&ble_scan_en[1],opcode,9);
@@ -2267,6 +2901,7 @@ static int aic_handle_cmd(struct sk_buff *skb)
         case HCI_OP_Write_Scan_Enable:
             {
                 u8 scan_en = opcode[3];
+                printk("%s,0x%x,%x\n",__func__,command,scan_en);
                 if(scan_en){
                     bt_scan_en[0]=1;
                     bt_scan_en[4] = scan_en;
@@ -2288,6 +2923,14 @@ static int aic_handle_cmd(struct sk_buff *skb)
             {
                 printk("%s,0x%x\n",__func__,command);
                 ble_create_con[0]=0;
+            }
+            break;
+        case HCI_OP_RESET:
+            {
+                printk("%s,0x%x\n",__func__,command);
+                ble_create_con[0]=0;
+                bt_scan_en[0]=0;
+                ble_scan_en[0]=0;
             }
             break;
         default:
@@ -3440,18 +4083,20 @@ static int aicbt_wf_cinit_data_load(firmware_info *fw_info)
         printk("%s download wf cinit error, ret:%d\r\n", __func__, ret);
         return ret;
     }
-    addr = ROM_FMAC_BTUSB_ADDR_8800D80N_U02;
-    printk("%s wf btusb:%s addr:%x\r\n", __func__, aicbt_fw->wf_btusb, addr);
-    ret = download_data(fw_info, addr, aicbt_fw->wf_btusb);
-    if (ret < 0) {
-        printk("%s download wf btusb error, ret:%d\r\n", __func__, ret);
-        return ret;
-    }
-    printk("%s patch btusb\r\n", __func__);
-    ret = rwnx_send_dbg_mem_write_req(fw_info, 0x00113564, ROM_FMAC_BTUSB_ADDR_8800D80N_U02 + 0x0009);
-    if (ret) {
-        printk("%s patch btusb error, ret:%d\r\n", __func__, ret);
-        return ret;
+    if (sub_chip_id < D80N_U02C) {
+        addr = ROM_FMAC_BTUSB_ADDR_8800D80N_U02;
+        printk("%s wf btusb:%s addr:%x\r\n", __func__, aicbt_fw->wf_btusb, addr);
+        ret = download_data(fw_info, addr, aicbt_fw->wf_btusb);
+        if (ret < 0) {
+            printk("%s download wf btusb error, ret:%d\r\n", __func__, ret);
+            return ret;
+        }
+        printk("%s patch btusb\r\n", __func__);
+        ret = rwnx_send_dbg_mem_write_req(fw_info, 0x00113564, ROM_FMAC_BTUSB_ADDR_8800D80N_U02 + 0x0009);
+        if (ret) {
+            printk("%s patch btusb error, ret:%d\r\n", __func__, ret);
+            return ret;
+        }
     }
     return ret;
 }
@@ -4972,6 +5617,9 @@ static int bt_reboot_notify(struct notifier_block *notifier, ulong pm_event, voi
         ret = aic_cmd_disable_scan(fw_info);
         AICBT_ERR("%s disable scan err %x\n", __func__, ret);
         aic_cmd_disconnect_all_store_acl_handle(fw_info);
+		#ifdef CONFIG_WOBLE_WAVEFORM
+		set_bt_wakeup_sub_param(fw_info);
+		#endif
         set_bt_wakeup_param(fw_info);
         aic_clear_queue();
 #endif
@@ -5333,6 +5981,9 @@ static int btusb_suspend(struct usb_interface *intf, pm_message_t message)
         ret = aic_cmd_disable_scan(fw_info);
         AICBT_ERR("%s disable scan err %x\n", __func__, ret);
         aic_cmd_disconnect_all_store_acl_handle(fw_info);
+		#ifdef CONFIG_WOBLE_WAVEFORM
+    	set_bt_wakeup_sub_param(fw_info);
+		#endif
         set_bt_wakeup_param(fw_info);
         aic_clear_queue();
 #endif
@@ -5482,6 +6133,13 @@ static int __init btusb_init(void)
         AICBT_ERR("Failed to register usb char device interfaces");
     } else
         bt_char_dev_registered = 1;
+
+    err = aachr_init();
+    if (err < 0) {
+        /* usb register will go on, even bt char register failed */
+        AICBT_ERR("Failed to register usb aic array char device interfaces");
+    } else
+        aa_char_dev_registered = 1;
 #endif
     err = usb_register(&btusb_driver);
     if (err < 0)
@@ -5495,6 +6153,8 @@ static void __exit btusb_exit(void)
 #if CONFIG_BLUEDROID
     if (bt_char_dev_registered > 0)
         btchr_exit();
+    if (aa_char_dev_registered > 0)
+        aachr_exit();
 #endif
     usb_deregister(&btusb_driver);
 #if CONFIG_BLUEDROID

@@ -2709,7 +2709,7 @@ rf_misc_ram_lite_t loft_res_local;
 int aicwf_patch_table_load(struct rwnx_hw *rwnx_hw, char *filename)
 {
     int err = 0;
-    unsigned int i = 0, size;
+    int i = 0, size;
    	u32 *dst = NULL;
 	u8 *describle;
 	u32 fmacfw_patch_tbl_8800dc_u02_describe_size = 124;
@@ -3724,8 +3724,8 @@ int set_bbpll_config(struct rwnx_hw *rwnx_hw){
 			AICWFDBG(LOGERROR, "%s Not need to set \r\n", __func__);
 			return 0;
 		}else{
-			rd_mem_addr_cfm.memdata |= ((0x1 << 29) | (0x1 << 30));
-			rd_mem_addr_cfm.memdata &= (~(0x1 << 31));
+			rd_mem_addr_cfm.memdata |= ((0x1U << 29) | (0x1U << 30));
+			rd_mem_addr_cfm.memdata &= (~(0x1U << 31));
 			rwnx_send_dbg_mem_write_req(rwnx_hw, 0x40505010, rd_mem_addr_cfm.memdata);
 		}
 	}

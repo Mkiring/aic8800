@@ -385,7 +385,11 @@ static int aicwf_resume_access(void)
 	if(g_rwnx_plat->pcidev->chip_id == PRODUCT_ID_AIC8800D80){
 		ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, fw_addr, RWNX_PCIE_FW_NAME);
 	}else if(g_rwnx_plat->pcidev->chip_id == PRODUCT_ID_AIC8800D80X2){
-		ret = rwnx_plat_bin_fw_upload_2(rwnx_hw, fw_addr, RWNX_8800D80X2_PCIE_FW_NAME);
+		#ifdef CONFIG_USB_BT
+		ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_8800D80X2_PCIE_FW_BT_NAME);
+		#else
+		ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_8800D80X2_PCIE_FW_NAME);
+		#endif
 	}
 
 	if (ret) {

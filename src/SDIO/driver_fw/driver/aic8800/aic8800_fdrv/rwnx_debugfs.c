@@ -1266,7 +1266,7 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_write(struct file *file,
 			size_t count, loff_t *ppos)
 {
 	struct rwnx_hw *priv = file->private_data;
-	char buf[64];
+	char buf[128];
 	int32_t addr[14];
     int32_t addr_out[12];
 	u32_l hwconfig_id;
@@ -1361,7 +1361,8 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_write(struct file *file,
 }
 
 DEBUGFS_WRITE_FILE_OPS(vendor_hwconfig);
-
+int ic_temp = 0;
+module_param(ic_temp, int, 0660);
 static ssize_t rwnx_dbgfs_vendor_swconfig_write(struct file *file,
             const char __user *user_buf,
             size_t count, loff_t *ppos)
@@ -1411,7 +1412,8 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_write(struct file *file,
                 } else {
                     ret = rwnx_send_vendor_swconfig_req(priv, swconfig_id, addr, addr_out);
                     printk("TEMP_COMP_GET_REQ get_st=%d, degree=%d\n", addr_out[0], addr_out[1]);
-                }
+					ic_temp = addr_out[1];
+				}
             break;
 
             case 3: // EXT_FLAGS_SET_REQ
@@ -1440,6 +1442,15 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_write(struct file *file,
                     ret = rwnx_send_vendor_swconfig_req(priv, swconfig_id, addr, addr_out);
                     printk("EXT_FLAGS_MASK_SET_REQ set ext_flags mask=0x%x, val=0x%x, get ext_flags=0x%x\n",
                         addr[0], addr[1], addr_out[0]);
+                }
+            break;
+
+            case 9: //FWLOG_REDIR_ENABLE_REQ:
+                if (ret != 1) {
+                    printk("param error != 1\n");
+                } else {
+                    ret = rwnx_send_vendor_swconfig_req(priv, swconfig_id, addr, addr_out);
+                    printk("FWLOG_REDIR_ENABLE_REQ switch: %d\n", addr_out[0]);
                 }
             break;
 
@@ -1653,6 +1664,16 @@ static ssize_t rwnx_dbgfs_vendor_swconfig_x2_write(struct file *file,
                 ret = rwnx_send_vendor_swconfig_req_x2(priv, swconfig_id, addr, addr_out);
                 printk("2 ant rssi=%x\n", addr_out[0]);
             break;
+
+            case 7: //FWLOG_REDIR_ENABLE_REQ:
+                if (ret != 1) {
+                    printk("param error != 1\n");
+                } else {
+                    ret = rwnx_send_vendor_swconfig_req_x2(priv, swconfig_id, addr, addr_out);
+                    printk("FWLOG_REDIR_ENABLE_REQ switch: %d\n", addr_out[0]);
+                }
+            break;
+
             default:
                 printk("param error\n");
                 break;
@@ -2591,6 +2612,8 @@ int rwnx_dbgfs_register(struct rwnx_hw *rwnx_hw, const char *name)
 	DEBUGFS_ADD_FILE(regdbg, dir_drv, S_IWUSR);
 	DEBUGFS_ADD_FILE(vendor_hwconfig, dir_drv,S_IWUSR);
 	DEBUGFS_ADD_FILE(vendor_swconfig, dir_drv,S_IWUSR);
+	DEBUGFS_ADD_FILE(vendor_hwconfig_x2, dir_drv,S_IWUSR);
+	DEBUGFS_ADD_FILE(vendor_swconfig_x2, dir_drv,S_IWUSR);
 	DEBUGFS_ADD_FILE(agg_disable, dir_drv,S_IWUSR);
 	DEBUGFS_ADD_FILE(set_roc, dir_drv,S_IWUSR);
 

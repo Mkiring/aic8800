@@ -1053,7 +1053,7 @@ void print_radar_detect_info(struct pri_detector *pde, struct pri_sequence *ps)
     AICWFDBG(LOGINFO, "\t rs: width[%u, %u]\n", rs->width_min, rs->width_max);
     AICWFDBG(LOGINFO, "\t rs: pri[%u, %u] %u\n", rs->pri_min, rs->pri_max, rs->num_pri);
     AICWFDBG(LOGINFO, "\t rs: %u/%u %u\n", rs->ppb, rs->ppb_thresh, rs->max_pri_tolerance);
-    
+
     AICWFDBG(LOGINFO, "\t ps.pri          = %u\n" , ps->pri           );
     AICWFDBG(LOGINFO, "\t ps.dur          = %u\n" , ps->dur           );
     AICWFDBG(LOGINFO, "\t ps.count        = %u\n" , ps->count         );
@@ -1389,7 +1389,7 @@ static void rwnx_radar_process_pulse(struct work_struct *ws)
 				for (k = 0; k < dpd->num_radar_types; k++)
 				{
 				spc =(struct radar_detector_specs *)&dpd->radar_spec[k];
-				AICWFDBG(LOGINFO, "%d       %3d, %3d        %4d  %4d  %d    %2d   %2d    %d     %d", 
+				AICWFDBG(LOGINFO, "%d       %3d, %3d        %4d  %4d  %d    %2d   %2d    %d     %d",
 				spc->type_id,
 				spc->width_min,
 				spc->width_max,
@@ -1414,18 +1414,15 @@ static void rwnx_radar_process_pulse(struct work_struct *ws)
 
                 u16 idx = radar->detected[chain].index;
 
-                #ifdef RWNX_RADAR_DUMP_EN
                 if (chain == RWNX_RADAR_RIU) {
+                    #ifdef RWNX_RADAR_DUMP_EN
                     int k;
                     AICWFDBG(LOGINFO, "\t received pulses %d %d\n", rm->cnt, rm->idx-1);
                     for(k=0; k<RWNX_RADARR_DUMP_NB; k++) {
                         AICWFDBG(LOGINFO, "\t %2d: %8x %10llu %10llu\n", rm->idx, rm->ps[rm->idx], rm->ts[rm->idx], rm->tm[rm->idx]);
                         rm->idx = (rm->idx + 1) % RWNX_RADARR_DUMP_NB;
                     }
-                }
-                #endif
-
-                if (chain == RWNX_RADAR_RIU) {
+                    #endif
                     /* operating chain, inform upper layer to change channel */
                     if (radar->dpd[chain]->enabled == RWNX_RADAR_DETECT_REPORT) {
                         rwnx_radar_detected(rwnx_hw);

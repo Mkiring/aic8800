@@ -1308,7 +1308,7 @@ static ssize_t rwnx_dbgfs_vendor_hwconfig_write(struct file *file,
 			size_t count, loff_t *ppos)
 {
 	struct rwnx_hw *priv = file->private_data;
-	char buf[64];
+	char buf[128];
 	int32_t addr[14];
     int32_t addr_out[12];
 	u32_l hwconfig_id;

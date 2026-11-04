@@ -488,7 +488,7 @@ typedef struct {
 #define USER_APM_PRBRSP_OFFLOAD_DISABLE_FLAG    (0x01U << 3)
 #define USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG     (0x01U << 4)
 #define USER_LOFT_CALIB_DISABLE_FLAG    (0x01U << 6) // d80
-#define USER_CAPA_CALIB_DISABLE_FLAG    (0x01U << 7) // d80
+#define USER_CAPA_CALIB_DISABLE_FLAG    (0x01U << 7) // d80, d80x2
 #define USER_PWR_CALIB_DISABLE_FLAG     (0x01U << 8) // d80
 #define USER_RF_WITH_SAW_EN_FLAG        (0x01U << 10)
 #define USER_SETCH_LOFT_CALIB_EN_FLAG   (0x01U << 11)
@@ -506,13 +506,13 @@ typedef struct {
 #define CFG_USER_TX_USE_ANA_F_EN            (0)
 #define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (defined(CONFIG_PRBREQ_REPORT))
 #define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
-#define CFG_USER_LOFT_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_CAPA_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_PWR_CALIB_DISABLE_DISABLE  (0)
+#define CFG_USER_LOFT_CALIB_DISABLE         (0)
+#define CFG_USER_CAPA_CALIB_DISABLE         (1)
+#define CFG_USER_PWR_CALIB_DISABLE          (0)
 #define CFG_USER_RF_WITH_SAW_EN             (0)
 #define CFG_USER_SETCH_LOFT_CALIB_EN        (1)
 #define CFG_USER_SETCH_RXDC_CALIB_EN        (0)
-#define CFG_USER_IPA_CALIB_DISABLE_DISABLE  (0)
+#define CFG_USER_IPA_CALIB_DISABLE          (0)
 
 u32 adaptivity_patch_tbl_8800d80[][2] = {
 	{0x000C, 0x0000320A}, //linkloss_thd
@@ -535,16 +535,16 @@ u32 patch_tbl_8800d80[][2] = {
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
             #endif
-            #if CFG_USER_LOFT_CALIB_DISABLE_DISABLE
+            #if CFG_USER_LOFT_CALIB_DISABLE
             USER_LOFT_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_CAPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_CAPA_CALIB_DISABLE
             USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_PWR_CALIB_DISABLE_DISABLE
+            #if CFG_USER_PWR_CALIB_DISABLE
             USER_PWR_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_IPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_IPA_CALIB_DISABLE
             USER_IPA_CALIB_DISABLE_FLAG |
             #endif
         0) & ~(
@@ -569,6 +569,9 @@ u32 patch_tbl_8800d80x2[][2] = {
             #endif
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
+            #endif
+            #if CFG_USER_CAPA_CALIB_DISABLE
+            USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
             #if CFG_USER_RF_WITH_SAW_EN
             USER_RF_WITH_SAW_EN_FLAG |
@@ -3940,7 +3943,7 @@ int aicbt_patch_table_load(struct rwnx_hw *rwnx_hw, struct aicbt_patch_table *_h
 
 		}
 		if (p->type == AICBT_PT_PWRON)
-			mdelay(100);	
+			mdelay(100);
 		//udelay(500);
 	}
 
@@ -4220,7 +4223,11 @@ int rwnx_platform_on(struct rwnx_hw *rwnx_hw, void *config)
             ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_PCIE_RF_FW_NAME);
     } else if(chip_id == PRODUCT_ID_AIC8800D80X2) {
         if (testmode == 0){
-			ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_8800D80X2_PCIE_FW_NAME);
+            #ifdef CONFIG_USB_BT
+            ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_8800D80X2_PCIE_FW_BT_NAME);
+            #else
+            ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_8800D80X2_PCIE_FW_NAME);
+            #endif
         }
         else
             ret = rwnx_plat_bin_fw_upload_2(rwnx_hw,fw_addr, RWNX_8800D80X2_PCIE_RF_FW_NAME);

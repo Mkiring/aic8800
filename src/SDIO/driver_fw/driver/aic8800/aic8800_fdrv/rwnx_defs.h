@@ -476,6 +476,20 @@ struct rwnx_rx_rate_stats {
 struct rwnx_sta_stats {
 	struct hw_vect last_rx;
 	struct rwnx_rx_rate_stats rx_rate;
+	u32 last_chan_time;
+	u32 last_chan_busy_time;
+	u32 tx_ack_succ_stat;
+	u32 tx_ack_fail_stat;
+	u32 last_chan_tx_busy_time;
+	u8_l rxnss;
+	u8_l rxmcs;
+	u8_l txnss;
+	u8_l txmcs;
+	u8_l phymode;
+	u32_l tx_phyrate;
+	u32_l rx_phyrate;
+	//u64 tx_bytes_ms;
+	u32_l tx_air_time_us;
 };
 
 #if (defined CONFIG_HE_FOR_OLD_KERNEL) || (defined CONFIG_VHT_FOR_OLD_KERNEL)
@@ -786,9 +800,10 @@ struct rwnx_hw {
 #ifdef CONFIG_SCHED_SCAN
     bool is_sched_scan;
 #endif//CONFIG_SCHED_SCAN
-	s8_l temp;
+	//s8_l temp;
 #ifdef CONFIG_TEMP_CONTROL
 	unsigned long started_jiffies;
+	s8_l temp;
 #endif
 #ifdef CONFIG_DYNAMIC_PWR
 	struct timer_list pwrloss_timer;

@@ -640,6 +640,7 @@ int rwnx_send_add_if(struct rwnx_hw *rwnx_hw, const unsigned char *mac,
         add_if_req_param->type = MM_MESH_POINT;
         break;
     case NL80211_IFTYPE_AP_VLAN:
+        AICWFDBG(LOGINFO, "%s AP_VLAN error\n", __func__);
         return -1;
     case NL80211_IFTYPE_MONITOR:
         add_if_req_param->type = MM_MONITOR;
@@ -677,11 +678,11 @@ int rwnx_send_set_channel(struct rwnx_hw *rwnx_hw, int phy_idx,
                           struct mm_set_channel_cfm *cfm)
 {
     struct mm_set_channel_req *req;
-    enum nl80211_chan_width width;
-    u16 center_freq, center_freq1, center_freq2;
+    enum nl80211_chan_width width = NL80211_CHAN_WIDTH_20_NOHT;
+    u16 center_freq = 0, center_freq1 = 0, center_freq2 = 0;
     s8 tx_power = 0;
-    u8 flags;
-    enum nl80211_band band;
+    u8 flags = 0;
+    enum nl80211_band band = NL80211_BAND_2GHZ;
 
     RWNX_DBG(RWNX_FN_ENTRY_STR);
 
@@ -1185,7 +1186,7 @@ int rwnx_send_rf_config_v2_req(struct rwnx_hw *rwnx_hw, u16_l ofst, u8_l sel, u8
 extern char aic_fw_path[FW_PATH_MAX_LEN_RF];
 
 int rwnx_rf_write_file(void *buf, int buf_len)
-{	
+{
 	int sum = 0, len = 0;
     char *path = NULL;
     struct file *fp = NULL;
@@ -1193,7 +1194,7 @@ int rwnx_rf_write_file(void *buf, int buf_len)
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(5, 10, 0)
 	mm_segment_t fs;
 #endif
-	
+
 	AICWFDBG(LOGINFO, "%s\n", __func__);
     path = __getname();
     if (!path) {
@@ -1203,7 +1204,7 @@ int rwnx_rf_write_file(void *buf, int buf_len)
 
 	len = snprintf(path, FW_PATH_MAX_LEN_RF, "%s/%s", aic_fw_path, FW_RF_CALIB_FILE);
 	AICWFDBG(LOGINFO, "%s: path=%s\n", __func__,path);
-	
+
 	fp = filp_open(path, O_RDWR | O_CREAT, 0644);
 	if (IS_ERR(fp)) {
 	  AICWFDBG(LOGINFO, "fp open fial\n");
@@ -1216,13 +1217,13 @@ int rwnx_rf_write_file(void *buf, int buf_len)
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 #endif
-	  
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
 	sum = kernel_write(fp, buf, buf_len, &pos);
 #else LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)
 	sum = kernel_write(fp, (char *)buf, buf_len, pos);
 #endif
-	  
+
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(5, 10, 0)
 	set_fs(fs);
 #endif
@@ -1232,7 +1233,7 @@ int rwnx_rf_write_file(void *buf, int buf_len)
 	fp = NULL;
 
     return 0;
-	  
+
 }
 
 int is_file_exist_rf(char* name)
@@ -1271,8 +1272,8 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
     int error;
 
     RWNX_DBG(RWNX_FN_ENTRY_STR);
-	AICWFDBG(LOGINFO, "%s in,chipid=%d\n", __func__,rwnx_hw->usbdev->chipid);	
-	
+	AICWFDBG(LOGINFO, "%s in,chipid=%d\n", __func__,rwnx_hw->usbdev->chipid);
+
 	if((rwnx_hw->usbdev->chipid == PRODUCT_ID_AIC8800D81X2) ||(rwnx_hw->usbdev->chipid == PRODUCT_ID_AIC8800D89X2))
 	{
 		struct mm_set_rf_calib_req_v2 *rf_calib_req;
@@ -1319,7 +1320,7 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 	        rf_calib_req->xtal_cap = 0;
 	        rf_calib_req->xtal_cap_fine = 0;
 	    }
-		
+
 #ifdef RF_WRITE_FILE
 		if(is_file_exist_rf(FW_RF_CALIB_FILE) == 1)
 		{
@@ -1329,20 +1330,20 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 			int size = 0, len = 0;// i = 0;
 			ssize_t rdlen = 0;
 			unsigned char decrypt[16];
-			//u32 **fw_buf =NULL; 
+			//u32 **fw_buf =NULL;
 			//struct kstat stat;
-		
-		
+
+
 			AICWFDBG(LOGINFO, "%s: file exist in\n", __func__);
 			path = __getname();
-			if (!path) 
+			if (!path)
 			{
 				return -1;
 			}
 			len = snprintf(path, FW_PATH_MAX_LEN_RF, "%s/%s", aic_fw_path, FW_RF_CALIB_FILE);
 			AICWFDBG(LOGINFO, "%s: path=%s\n", __func__,path);
 
-			if (len >= FW_PATH_MAX_LEN_RF) 
+			if (len >= FW_PATH_MAX_LEN_RF)
 			{
 				AICWFDBG(LOGERROR, "%s: %s file's path too long\n", __func__, FW_RF_CALIB_FILE);
 				__putname(path);
@@ -1350,7 +1351,7 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 			}
 
 			fp = filp_open(path, O_RDONLY, 0);
-			if (IS_ERR_OR_NULL(fp)) 
+			if (IS_ERR_OR_NULL(fp))
 			{
 				AICWFDBG(LOGERROR, "%s: %s file failed to open\n", __func__, FW_RF_CALIB_FILE);
 				__putname(path);
@@ -1362,7 +1363,7 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 			size =(int)fp->f_inode->i_size;
 			AICWFDBG(LOGINFO, "%s: file is %d bytes\n", __func__,size);
 			buffer = vmalloc(size);
-			if (!buffer) 
+			if (!buffer)
 			{
 				__putname(path);
 				filp_close(fp, NULL);
@@ -1376,8 +1377,8 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 			rdlen = kernel_read(fp, fp->f_pos, buffer, size);
 		#endif
 			//rwnx_data_dump("cal_res.res_data",buffer,size);
-			
-			if (size != rdlen) 
+
+			if (size != rdlen)
 			{
 			   AICWFDBG(LOGERROR, "%s: %s file rdlen invalid %d\n", __func__, FW_RF_CALIB_FILE, (int)rdlen);
 			   __putname(path);
@@ -1387,12 +1388,12 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 			   buffer = NULL;
 			   return -5;
 			}
-			
-			if (rdlen > 0) 
+
+			if (rdlen > 0)
 			{
 			   fp->f_pos += rdlen;
 			}
-			
+
 			__putname(path);
 			filp_close(fp, NULL);
 			fp = NULL;
@@ -1404,7 +1405,7 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 				rf_calib_req->cal_res.magic_num = DRIVER_SET_WIFI_CALRES_MAGIC_NUM;
 				rf_calib_req->cal_res.info_flag = 0x4F;
 				rf_calib_req->cal_res.calib_flag = 0x00;
-				// before req, write testmode rf calib reg->cal res.res_data[], data read from file 	
+				// before req, write testmode rf calib reg->cal res.res_data[], data read from file
 			}
 			else
 			{
@@ -1423,20 +1424,20 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 			rf_calib_req->cal_res.info_flag = 0x00;
 			rf_calib_req->cal_res.calib_flag = 0x4F;
 			// after req, read mm_set_rf_calib_cfm.cal_res.res data[]
-			// save the data into file		
+			// save the data into file
 		}
 		/* Send the MM_SET_RF_CALIB_REQ message to UMAC FW */
 		error = rwnx_send_msg(rwnx_hw, rf_calib_req, 1, MM_SET_RF_CALIB_CFM, &cfm2);
 
 #ifdef RF_WRITE_FILE
 		if(is_file_exist_rf(FW_RF_CALIB_FILE) != 1)
-		{	
+		{
 			void *buffer = NULL;
 			int buf_len = sizeof(cfm2.cal_res.res_data);
-			
+
 			AICWFDBG(LOGINFO, "%s: file not exist in2,buf_len=%d\n", __func__,buf_len);
 			buffer = vmalloc(buf_len);
-			if (!buffer) 
+			if (!buffer)
 			{
 				return -4;
 			}
@@ -1449,7 +1450,7 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 		cfm->rxgain_24g_addr	= 	cfm2.rxgain_24g_addr;
     	cfm->rxgain_5g_addr 	= 	cfm2.rxgain_5g_addr;
     	cfm->txgain_24g_addr 	= 	cfm2.txgain_24g_addr;
-    	cfm->txgain_5g_addr		=	cfm2.txgain_5g_addr;	
+    	cfm->txgain_5g_addr		=	cfm2.txgain_5g_addr;
 	}
 	else
 	{
@@ -1498,9 +1499,28 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 		/* Send the MM_SET_RF_CALIB_REQ message to UMAC FW */
 		error = rwnx_send_msg(rwnx_hw, rf_calib_req, 1, MM_SET_RF_CALIB_CFM, cfm);
 	}
-		
+
     return (error);
 };
+
+int rwnx_send_rf_secure_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *cfm, int cal_step)
+{
+    int error;
+    struct mm_set_rf_calib_req *rf_calib_req;
+    /* Build the MM_SET_RF_CALIB_REQ message */
+    rf_calib_req = rwnx_msg_zalloc(MM_SET_RF_CALIB_REQ, TASK_MM, DRV_TASK_ID,
+                                  sizeof(struct mm_set_rf_calib_req));
+    if (!rf_calib_req) {
+        return -ENOMEM;
+    }
+    if (rwnx_hw->usbdev->chipid == PRODUCT_ID_AIC8800D80N) {
+        rf_calib_req->cal_cfg_24g = DRIVER_CNTRL_WIFI_SECCAL_MAGIC_NUM;
+        rf_calib_req->cal_cfg_5g = cal_step;
+    }
+    /* Send the MM_SET_RF_CALIB_REQ message to UMAC FW */
+    error = rwnx_send_msg(rwnx_hw, rf_calib_req, 1, MM_SET_RF_CALIB_CFM, cfm);
+    return error;
+}
 
 int rwnx_send_get_macaddr_req(struct rwnx_hw *rwnx_hw, struct mm_get_mac_addr_cfm *cfm)
 {
@@ -3813,7 +3833,7 @@ int rwnx_send_sm_connect_req(struct rwnx_hw *rwnx_hw,
     /* Set UAPSD queues */
     req->uapsd_queues = rwnx_mod_params.uapsd_queues;
 
-    rwnx_vif->wep_enabled = pval & gval;
+    rwnx_vif->wep_enabled = pval && gval;
 
     if (rwnx_vif->wep_enabled) {
         rwnx_vif->last_auth_type = sme->auth_type;
@@ -3900,6 +3920,13 @@ int rwnx_send_apm_start_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *vif,
     int var_offset = offsetof(struct ieee80211_mgmt, u.beacon.variable);
     const u8 *var_pos;
     int len, i;
+#ifdef CONFIG_POWER_LIMIT
+    int8_t max_pwr;
+    uint8_t r_idx;
+    txpwr_loss_conf_t txpwr_loss_tmp;
+    txpwr_loss_conf_t *txpwr_loss;
+#endif
+
 
     RWNX_DBG(RWNX_FN_ENTRY_STR);
 
@@ -3999,6 +4026,25 @@ int rwnx_send_apm_start_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *vif,
     else
         req->ctrl_port_ethertype = ETH_P_PAE;
     req->flags = flags;
+
+#ifdef CONFIG_POWER_LIMIT
+    r_idx = get_ccode_region(rwnx_hw->wiphy->regd->alpha2);
+    txpwr_loss = &txpwr_loss_tmp;
+    get_userconfig_txpwr_loss(txpwr_loss);
+    max_pwr = get_powerlimit_by_freq(req->chan.band, req->chan.freq, r_idx);
+    if (req->chan.band == PHY_BAND_2G4) {
+        if (txpwr_loss->loss_enable_2g4 == 1)
+            max_pwr -= txpwr_loss->loss_value_2g4;
+    } else if (req->chan.band == PHY_BAND_5G) {
+        if (txpwr_loss->loss_enable_5g == 1)
+            max_pwr -= txpwr_loss->loss_value_5g;
+    }
+    if (req->chan.tx_power > max_pwr) {
+        AICWFDBG(LOGDEBUG, "ccode: %s, req_pwr: %d max_pwr: %d\n",
+                rwnx_hw->wiphy->regd->alpha2, req->chan.tx_power, max_pwr);
+        req->chan.tx_power = max_pwr;
+    }
+#endif
 
     /* Send the APM_START_REQ message to LMAC FW */
     return rwnx_send_msg(rwnx_hw, req, 1, APM_START_CFM, cfm);
@@ -5230,6 +5276,49 @@ int rwnx_send_get_temp_req(struct rwnx_hw *rwnx_hw, s8_l *temp)
 	}
 	return ret;
 }
+
+#ifdef CONFIG_REKEY_OFFLOAD
+int rwnx_send_station_rekey_offload(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
+			struct cfg80211_gtk_rekey_data *data)
+{
+	int error;
+	struct mm_set_vendor_swconfig_req *req;
+
+	RWNX_DBG(RWNX_FN_ENTRY_STR);
+
+	req = rwnx_msg_zalloc(MM_SET_VENDOR_SWCONFIG_REQ, TASK_MM, DRV_TASK_ID,
+	                      sizeof(struct mm_set_vendor_swconfig_req));
+	if (!req)
+		return -ENOMEM;
+
+	req->swconfig_id = GTK_REKEY_REQ;
+
+	req->gtk_rekey_req.vif_idx = rwnx_vif->vif_index;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+	req->gtk_rekey_req.kek_len = data->kek_len;
+	req->gtk_rekey_req.kck_len = data->kck_len;
+#else
+	req->gtk_rekey_req.kek_len = NL80211_KEK_LEN;
+	req->gtk_rekey_req.kck_len = NL80211_KCK_LEN;
+#endif
+	req->gtk_rekey_req.akm = 0;//fw self-analysis
+	memcpy(req->gtk_rekey_req.kek, data->kek, req->gtk_rekey_req.kek_len);
+	memcpy(req->gtk_rekey_req.kck, data->kck, req->gtk_rekey_req.kck_len);
+	memcpy(req->gtk_rekey_req.replay_ctr, data->replay_ctr, 8);
+
+	error = rwnx_send_msg(rwnx_hw, req, 1, MM_SET_VENDOR_SWCONFIG_CFM, NULL);
+	if (error) {
+		AICWFDBG(LOGERROR, "Failed to send set request (error: %d)\n", error);
+		return error;
+	}
+
+	AICWFDBG(LOGINFO, "replay:%x, %x\n", req->gtk_rekey_req.replay_ctr[0], req->gtk_rekey_req.replay_ctr[7]);
+
+	return error;
+
+}
+#endif
 
 //#ifdef CONFIG_USB_BT
 int rwnx_send_reboot(struct rwnx_hw *rwnx_hw)

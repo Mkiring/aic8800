@@ -59,7 +59,7 @@ static void cmd_complete(struct rwnx_cmd_mgr *cmd_mgr, struct rwnx_cmd *cmd)
             complete(&cmd->complete);
         }
     }
-    
+
     if(cmd_mgr->queue_sz == 0){
         rwnx_wakeup_unlock(g_rwnx_plat->usbdev->rwnx_hw->ws_tx);
     }
@@ -127,7 +127,7 @@ static int cmd_mgr_queue(struct rwnx_cmd_mgr *cmd_mgr, struct rwnx_cmd *cmd)
     struct aic_sdio_dev *sdiodev = container_of(cmd_mgr, struct aic_sdio_dev, cmd_mgr);
 #endif
 #ifdef AICWF_USB_SUPPORT
-	
+
     struct aic_usb_dev *usbdev = container_of(cmd_mgr, struct aic_usb_dev, cmd_mgr);
 #endif
     bool defer_push = false;
@@ -268,7 +268,7 @@ static int cmd_mgr_queue(struct rwnx_cmd_mgr *cmd_mgr, struct rwnx_cmd *cmd)
 
             cmd_dump(cmd);
             spin_lock_bh(&cmd_mgr->lock);
-            
+
             cmd_mgr->state = RWNX_CMD_MGR_STATE_CRASHED;
             if (!(cmd->flags & RWNX_CMD_FLAG_DONE)) {
                 cmd->result = -ETIMEDOUT;
@@ -362,16 +362,15 @@ void cmd_mgr_task_process(struct work_struct *work)
         }
         spin_unlock_bh(&cmd_mgr->lock);
 
-        if(next == NULL)
+        if (next == NULL) {
             break;
-
-        if (next) {
- 	    #ifdef AICWF_SDIO_SUPPORT
+        } else {
+            #ifdef AICWF_SDIO_SUPPORT
             struct aic_sdio_dev *sdiodev = container_of(cmd_mgr, struct aic_sdio_dev, cmd_mgr);
-	    #endif
-	    #ifdef AICWF_USB_SUPPORT
-    	    struct aic_usb_dev *usbdev = container_of(cmd_mgr, struct aic_usb_dev, cmd_mgr);
-	    #endif
+            #endif
+            #ifdef AICWF_USB_SUPPORT
+            struct aic_usb_dev *usbdev = container_of(cmd_mgr, struct aic_usb_dev, cmd_mgr);
+            #endif
             next->flags &= ~RWNX_CMD_FLAG_WAIT_PUSH;
 
             //printk("cmd_process, cmd->id=%d, tkn=%d\r\n",next->reqid, next->tkn);
@@ -388,7 +387,7 @@ void cmd_mgr_task_process(struct work_struct *work)
                 printk(KERN_CRIT"%s cmd timed-out cmd_mgr->queue_sz:%d\n", __func__, cmd_mgr->queue_sz);
                 cmd_dump(next);
                 spin_lock_bh(&cmd_mgr->lock);
-                //AIDEN  workaround  
+                //AIDEN  workaround
                 cmd_mgr->state = RWNX_CMD_MGR_STATE_CRASHED;
                 if (!(next->flags & RWNX_CMD_FLAG_DONE)) {
                     next->result = -ETIMEDOUT;

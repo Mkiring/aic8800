@@ -1,4 +1,4 @@
-#  [aic8800d_linux_sdk_V5.0_2026_0123_5f7be68d]
+#  [aic8800d_linux_sdk_V5.0_2026_0509_2195ae36]
 
 ##  Directory: USB/driver_fw/fw\aic8800
 
@@ -33,10 +33,11 @@
  | fmacfw_8800d80_u02_ipc.bin | d322d08fa6dd403dbb38195eda2ff5e7 | la Dec 05 2025 19:46:57 - g586bc1e8 |
  | fw_adid_8800d80_u02.bin | f546881a81b960d89a672578eb45a809 | N/A |
  | fw_ble_scan_ad_filter.bin | bd566a8fe7126a5518e922cb0f3295d5 | en Mar 22 2025 08:19:51 - git |
- | fw_patch_8800d80_u02.bin | f5400db1d64e0150c3232eb53e7f78b6 | Aug 01 2025 11:05:26 - git a26f071 |
- | fw_patch_8800d80_u02_ext0.bin | 6fcbe60f7bcf7bc39bdf6e9c3fb7f1d8 | N/A |
+ | fw_patch_8800d80_u02.bin | c99dc03e81d35b2f79ce7602ec5d4a56 | N/A |
+ | fw_patch_8800d80_u02_ext0.bin | f612f4155a1cf0a344742819d2bf9e56 | N/A |
+ | fw_patch_8800d80_u02_ext1.bin | 1201b4e4d7d488ca85320a7a4518e983 | Apr 27 2026 19:32:28 - git da91de1 |
  | fw_patch_8800d80_u04.bin | 3761e5ee1d9ed73409057a0627e0109a | Mar 17 2025 11:19:53 - git d0a8209 |
- | fw_patch_table_8800d80_u02.bin | 54b15ce88b3b9ba14bf961e6f90839fc | Aug 01 2025 11:05:26 - git a26f071 |
+ | fw_patch_table_8800d80_u02.bin | c5628ff42a16bfddf98e2a01bb7fb4a4 | Apr 27 2026 19:32:28 - git da91de1 |
  | fw_patch_table_8800d80_u04.bin | 43327ec4d2282f64c065688f92f892d3 | Mar 17 2025 11:19:53 - git d0a8209 |
  | lmacfw_rf_8800d80_u02.bin | 333315275bb23bac64e71b264a57b7ac | la Dec 05 2025 19:49:35 - g586bc1e8 |
 
@@ -45,32 +46,42 @@
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
  | fmacfw_btusb_8800d80n_u02.bin | c072eada1ed9946b4876e02a46a2463e | N/A |
- | fmacfw_calib_8800d80n_u02.bin | 907b552c83fa91d9f8576cdab544ab78 | la Dec 30 2025 15:56:34 - g4deb809 |
- | fmacfw_cinit_8800d80n_u02.bin | 026607b394eef03ffb44f4688c21cc60 | la Dec 30 2025 15:56:34 - g4deb809 |
- | fmacfw_patch_8800d80n_u02.bin | 275fdcb0d4bc0f3ac82ae35eaee05593 | la Dec 30 2025 15:57:06 - g4deb809 |
- | fmacfw_patch_tbl_8800d80n_u02.bin | beac459159ccffa5315106066046cf87 | N/A |
- | fw_patch_8800d80n_rf_u02.bin | 7bc18d56977d9f9763abb358683459bb | Dec 30 2025 21:39:20 - git e456ec3 |
- | fw_patch_8800d80n_rf_u02_ext0.bin | 799b25f879b17dab4a63003c48696160 | N/A |
- | fw_patch_8800d80n_u02.bin | 71ec111342a15e57e6c0586587b4bb43 | Dec 30 2025 21:42:37 - git e456ec3 |
- | fw_patch_8800d80n_u02_ext0.bin | 155ea5f922651d3feb39b1cb228c0c6b | N/A |
- | fw_patch_table_8800d80n_rf_u02.bin | 2ce20798f0ad9683158ccbaebcd6fe4c | Dec 30 2025 21:39:20 - git e456ec3 |
- | fw_patch_table_8800d80n_u02.bin | 54959b0d026c7e9ca7e2891de84d3d4f | Dec 30 2025 21:42:37 - git e456ec3 |
- | lmacfw_rf_8800d80n.bin | 102dfc2e9ab8cb15b25a46d989e33684 | la Dec 30 2025 15:55:35 - g070d529 |
+ | fmacfw_calib_8800d80n_u02.bin | 15df38a3796631ede223b078e8a080f4 | la May 08 2026 13:06:17 - g67293d5 |
+ | fmacfw_calib_8800d80n_u02c.bin | e0912c720d2230d3be3cba22eccd1bcb | la May 08 2026 14:21:24 - g7d2b59b |
+ | fmacfw_cinit_8800d80n_u02.bin | d1b0227246a18c19ada440f364aad2f8 | la May 08 2026 13:06:17 - g67293d5 |
+ | fmacfw_cinit_8800d80n_u02c.bin | 97bd52b694f6bce9d9d0094cea3c19c7 | la May 08 2026 14:21:24 - g7d2b59b |
+ | fmacfw_patch_8800d80n_u02.bin | 00fca9f2381ae0f0166dd97340ab221f | la May 08 2026 13:06:17 - g67293d5 |
+ | fmacfw_patch_8800d80n_u02c.bin | 46575e541f352fe04d22a405ac7bf379 | la May 08 2026 14:21:24 - g7d2b59b |
+ | fmacfw_patch_tbl_8800d80n_u02.bin | 1a4a656194a0cf7fab339e8c407ed097 | N/A |
+ | fmacfw_patch_tbl_8800d80n_u02c.bin | a688176a287f57599248e9d9a6be2e6d | N/A |
+ | fw_patch_8800d80n_rf_u02.bin | 561204b1f2a0101b440bfeb81adcd9ae | Apr 22 2026 19:01:34 - git e7b2582 |
+ | fw_patch_8800d80n_rf_u02c.bin | aa8b90e117cc5dec5682674d8d2e8db0 | Apr 22 2026 19:19:03 - git be54ffb |
+ | fw_patch_8800d80n_rf_u02c_ext0.bin | 907f83d7c26d2f7ef3ca1abe4aa42bb4 | N/A |
+ | fw_patch_8800d80n_rf_u02_ext0.bin | 8f72f69c742167e45b14ce90788466af | N/A |
+ | fw_patch_8800d80n_u02.bin | 3d79b7de867a42a443a734896925ecea | Apr 22 2026 19:00:39 - git e7b2582 |
+ | fw_patch_8800d80n_u02c.bin | 756b9c898124a8ee590c828cac21621d | Apr 22 2026 19:21:34 - git be54ffb |
+ | fw_patch_8800d80n_u02c_ext0.bin | 907f83d7c26d2f7ef3ca1abe4aa42bb4 | N/A |
+ | fw_patch_8800d80n_u02_ext0.bin | 1bcc3d05befb37a644ebee3936cbbfa6 | N/A |
+ | fw_patch_table_8800d80n_rf_u02.bin | 2076a1bb20322df81cf007babf13adf2 | Apr 22 2026 19:01:34 - git e7b2582 |
+ | fw_patch_table_8800d80n_rf_u02c.bin | a583993cf82ff99ec06e55f2c549bb95 | Apr 22 2026 19:19:03 - git be54ffb |
+ | fw_patch_table_8800d80n_u02.bin | 12ffa4bb74d906180e7586916fa54be5 | Apr 22 2026 19:00:39 - git e7b2582 |
+ | fw_patch_table_8800d80n_u02c.bin | 35434067b624f3664368644ea541d344 | Apr 22 2026 19:21:34 - git be54ffb |
+ | lmacfw_rf_8800d80n.bin | d09df2402d54b5d0ae807d771b506db0 | la May 08 2026 13:04:44 - gd43aa9c |
 
 ##  Directory: USB/driver_fw/fw\aic8800D80X2
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
- | fmacfw_8800d80x2.bin | 3887c882189e9fde987e9896b2d67c1a | la Dec 05 2025 19:44:58 - g7c7d791 |
+ | fmacfw_8800d80x2.bin | 977096fb74a8d081defef53b99af28a8 | la Apr 30 2026 17:00:48 - gc4c24878 |
  | fw_adid_8800d80x2_u03.bin | 046f0272f2c274e11233bddebbd8f887 | N/A |
  | fw_adid_8800d80x2_u05.bin | cdf8e2a582a88c765a47ca0538711390 | N/A |
  | fw_patch_8800d80x2_u03.bin | 57ef1c09e1769db1c32940e404ac825a | Nov 09 2024 14:31:19 - git 9c010a5 |
- | fw_patch_8800d80x2_u05.bin | 0e97aa046a7fc40df58bf187f63bb782 | N/A |
- | fw_patch_8800d80x2_u05_ext0.bin | 0c6168223c593361c9b832b66dbf93e0 | N/A |
- | fw_patch_8800d80x2_u05_ext1.bin | ac87180b84c5c92d6521db6023405c58 | Nov 22 2025 14:25:20 - git 0d82495 |
+ | fw_patch_8800d80x2_u05.bin | 3758ea627fe48f60ac55796300c0ae06 | N/A |
+ | fw_patch_8800d80x2_u05_ext0.bin | 7e6d1eeef8e9556db4f6d6e474b8f936 | N/A |
+ | fw_patch_8800d80x2_u05_ext1.bin | 9b5a1b154d483b4f7c4e0dfa64b21acc | Mar 16 2026 11:32:01 - git 3eb1a90 |
  | fw_patch_table_8800d80x2_u03.bin | 2c4f3266f2dcef1111038d2ba833a0c8 | Nov 09 2024 14:31:19 - git 9c010a5 |
- | fw_patch_table_8800d80x2_u05.bin | 8aba326ef470139c2119a46b1c0d74a2 | Nov 22 2025 14:25:20 - git 0d82495 |
- | lmacfw_rf_8800d80x2.bin | 51e285f03cc2eb844e08e51afc031f9a | la Dec 05 2025 19:46:42 - g7c7d791 |
+ | fw_patch_table_8800d80x2_u05.bin | edc988c2b599ac3a135677dfe7ee3688 | Mar 16 2026 11:32:01 - git 3eb1a90 |
+ | lmacfw_rf_8800d80x2.bin | 1a2b1f7b67338d537912426dfa400e60 | la Apr 30 2026 17:02:24 - gc4c24878 |
 
 ##  Directory: USB/driver_fw/fw\aic8800DC
 
@@ -121,47 +132,60 @@
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
- | fmacfwbt_8800d80_h_u02.bin | 98643c40c45e8a508d388d8fa2825144 | la Dec 05 2025 19:44:28 - g586bc1e8 |
- | fmacfwbt_8800d80_u02.bin | ed932644298509bbda3668cbca8b8ebb | la Dec 05 2025 19:43:50 - g586bc1e8 |
- | fmacfw_8800d80_h_u02.bin | 5f3302e5557d8b5fc1526d30d2b20899 | la Dec 05 2025 19:43:15 - g586bc1e8 |
+ | fmacfwbt_8800d80_h_u02.bin | a4a6ae774518451441ba26c879614bbf | la Jan 26 2026 19:47:22 - g9eb3c8f9 |
+ | fmacfwbt_8800d80_u02.bin | ac15781027838e1bf807c809874106f4 | la Jan 26 2026 19:46:48 - g9eb3c8f9 |
+ | fmacfw_8800d80_h_u02.bin | f8850ef9ab6d26a765883b0ffe24b25f | la Jan 26 2026 19:46:13 - g9eb3c8f9 |
  | fmacfw_8800d80_h_u02_ipc.bin | 5f3302e5557d8b5fc1526d30d2b20899 | la Dec 05 2025 19:43:15 - g586bc1e8 |
- | fmacfw_8800d80_u02.bin | 56562779b8c4debfd9b354891418249a | la Dec 05 2025 19:42:40 - g586bc1e8 |
+ | fmacfw_8800d80_u02.bin | 7058b3bf9f6a142ee729601e1a46e88a | la Jan 26 2026 19:45:39 - g9eb3c8f9 |
  | fmacfw_8800d80_u02_ipc.bin | 56562779b8c4debfd9b354891418249a | la Dec 05 2025 19:42:40 - g586bc1e8 |
  | fw_adid_8800d80_u02.bin | f546881a81b960d89a672578eb45a809 | N/A |
- | fw_patch_8800d80_u02.bin | f5400db1d64e0150c3232eb53e7f78b6 | Aug 01 2025 11:05:26 - git a26f071 |
- | fw_patch_8800d80_u02_ext0.bin | 6fcbe60f7bcf7bc39bdf6e9c3fb7f1d8 | N/A |
+ | fw_patch_8800d80_u02.bin | c99dc03e81d35b2f79ce7602ec5d4a56 | N/A |
+ | fw_patch_8800d80_u02_ext0.bin | f612f4155a1cf0a344742819d2bf9e56 | N/A |
+ | fw_patch_8800d80_u02_ext1.bin | 1201b4e4d7d488ca85320a7a4518e983 | Apr 27 2026 19:32:28 - git da91de1 |
  | fw_patch_8800d80_u04.bin | 3761e5ee1d9ed73409057a0627e0109a | Mar 17 2025 11:19:53 - git d0a8209 |
- | fw_patch_table_8800d80_u02.bin | 54b15ce88b3b9ba14bf961e6f90839fc | Aug 01 2025 11:05:26 - git a26f071 |
+ | fw_patch_table_8800d80_u02.bin | c5628ff42a16bfddf98e2a01bb7fb4a4 | Apr 27 2026 19:32:28 - git da91de1 |
  | fw_patch_table_8800d80_u04.bin | 43327ec4d2282f64c065688f92f892d3 | Mar 17 2025 11:19:53 - git d0a8209 |
- | lmacfw_rf_8800d80_u02.bin | 613b05bcee1e06a3217d2f9387408712 | la Dec 05 2025 19:49:10 - g586bc1e8 |
+ | lmacfw_rf_8800d80_u02.bin | b5b8157f97abcfa9721793fcada1dab6 | la Jan 26 2026 19:51:52 - g9eb3c8f9 |
 
 ##  Directory: SDIO/driver_fw/fw\aic8800D80N
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
- | fmacfw_calib_8800d80n_u02.bin | 907b552c83fa91d9f8576cdab544ab78 | la Dec 30 2025 15:56:34 - g4deb809 |
- | fmacfw_cinit_8800d80n_u02.bin | 026607b394eef03ffb44f4688c21cc60 | la Dec 30 2025 15:56:34 - g4deb809 |
- | fmacfw_patch_8800d80n_u02.bin | 275fdcb0d4bc0f3ac82ae35eaee05593 | la Dec 30 2025 15:57:06 - g4deb809 |
- | fmacfw_patch_tbl_8800d80n_u02.bin | beac459159ccffa5315106066046cf87 | N/A |
+ | fmacfw_btusb_8800d80n_u02.bin | c072eada1ed9946b4876e02a46a2463e | N/A |
+ | fmacfw_calib_8800d80n_u02.bin | 15df38a3796631ede223b078e8a080f4 | la May 08 2026 13:06:17 - g67293d5 |
+ | fmacfw_calib_8800d80n_u02c.bin | e0912c720d2230d3be3cba22eccd1bcb | la May 08 2026 14:21:24 - g7d2b59b |
+ | fmacfw_cinit_8800d80n_u02.bin | d1b0227246a18c19ada440f364aad2f8 | la May 08 2026 13:06:17 - g67293d5 |
+ | fmacfw_cinit_8800d80n_u02c.bin | 97bd52b694f6bce9d9d0094cea3c19c7 | la May 08 2026 14:21:24 - g7d2b59b |
+ | fmacfw_patch_8800d80n_u02.bin | 00fca9f2381ae0f0166dd97340ab221f | la May 08 2026 13:06:17 - g67293d5 |
+ | fmacfw_patch_8800d80n_u02c.bin | 46575e541f352fe04d22a405ac7bf379 | la May 08 2026 14:21:24 - g7d2b59b |
+ | fmacfw_patch_tbl_8800d80n_u02.bin | 1a4a656194a0cf7fab339e8c407ed097 | N/A |
+ | fmacfw_patch_tbl_8800d80n_u02c.bin | a688176a287f57599248e9d9a6be2e6d | N/A |
  | fw_adid_8800d80n_u02.bin | 76f65a5fe65f465f0a8de4aad21e4b4d | N/A |
- | fw_patch_8800d80n_rf_u02.bin | 7bc18d56977d9f9763abb358683459bb | Dec 30 2025 21:39:20 - git e456ec3 |
- | fw_patch_8800d80n_rf_u02_ext0.bin | 799b25f879b17dab4a63003c48696160 | N/A |
- | fw_patch_8800d80n_u02.bin | 71ec111342a15e57e6c0586587b4bb43 | Dec 30 2025 21:42:37 - git e456ec3 |
- | fw_patch_8800d80n_u02_ext0.bin | 155ea5f922651d3feb39b1cb228c0c6b | N/A |
- | fw_patch_table_8800d80n_rf_u02.bin | 2ce20798f0ad9683158ccbaebcd6fe4c | Dec 30 2025 21:39:20 - git e456ec3 |
- | fw_patch_table_8800d80n_u02.bin | 54959b0d026c7e9ca7e2891de84d3d4f | Dec 30 2025 21:42:37 - git e456ec3 |
- | lmacfw_rf_8800d80n.bin | 102dfc2e9ab8cb15b25a46d989e33684 | la Dec 30 2025 15:55:35 - g070d529 |
+ | fw_patch_8800d80n_rf_u02.bin | 561204b1f2a0101b440bfeb81adcd9ae | Apr 22 2026 19:01:34 - git e7b2582 |
+ | fw_patch_8800d80n_rf_u02c.bin | aa8b90e117cc5dec5682674d8d2e8db0 | Apr 22 2026 19:19:03 - git be54ffb |
+ | fw_patch_8800d80n_rf_u02c_ext0.bin | 907f83d7c26d2f7ef3ca1abe4aa42bb4 | N/A |
+ | fw_patch_8800d80n_rf_u02_ext0.bin | 8f72f69c742167e45b14ce90788466af | N/A |
+ | fw_patch_8800d80n_u02.bin | 3d79b7de867a42a443a734896925ecea | Apr 22 2026 19:00:39 - git e7b2582 |
+ | fw_patch_8800d80n_u02c.bin | 756b9c898124a8ee590c828cac21621d | Apr 22 2026 19:21:34 - git be54ffb |
+ | fw_patch_8800d80n_u02c_ext0.bin | 907f83d7c26d2f7ef3ca1abe4aa42bb4 | N/A |
+ | fw_patch_8800d80n_u02_ext0.bin | 1bcc3d05befb37a644ebee3936cbbfa6 | N/A |
+ | fw_patch_table_8800d80n_rf_u02.bin | 2076a1bb20322df81cf007babf13adf2 | Apr 22 2026 19:01:34 - git e7b2582 |
+ | fw_patch_table_8800d80n_rf_u02c.bin | a583993cf82ff99ec06e55f2c549bb95 | Apr 22 2026 19:19:03 - git be54ffb |
+ | fw_patch_table_8800d80n_u02.bin | 12ffa4bb74d906180e7586916fa54be5 | Apr 22 2026 19:00:39 - git e7b2582 |
+ | fw_patch_table_8800d80n_u02c.bin | 35434067b624f3664368644ea541d344 | Apr 22 2026 19:21:34 - git be54ffb |
+ | lmacfw_rf_8800d80n.bin | 189fe5b5e2f7ce85fc4a1bb44e251aae | la May 08 2026 13:04:18 - gd43aa9c |
 
 ##  Directory: SDIO/driver_fw/fw\aic8800D80X2
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
- | fmacfw_8800d80x2.bin | 000ce5f22fd55dda5ebd3ff5dfc9d187 | la Dec 05 2025 19:44:18 - g7c7d791 |
+ | fmacfw_8800d80x2.bin | 52263b37c1ddbb0eb63a2d64c3205871 | la Apr 30 2026 17:00:06 - gc4c24878 |
  | fw_adid_8800d80x2_u05.bin | cdf8e2a582a88c765a47ca0538711390 | N/A |
- | fw_patch_8800d80x2_u05.bin | 3b372b269cec42930e41bba56304b679 | Aug 05 2025 16:29:00 - git a0dcd54 |
- | fw_patch_8800d80x2_u05_ext0.bin | 40771cb72a3101f14c4f265ac469afa8 | N/A |
- | fw_patch_table_8800d80x2_u05.bin | a74b3bdebabf7ac7fcb97aaeaf00bdf9 | Aug 05 2025 16:29:00 - git a0dcd54 |
- | lmacfw_rf_8800d80x2.bin | 2421539ae09d20110805e67b90d8e76e | di Jan 10 2026 20:27:49 - g93660f88 |
+ | fw_patch_8800d80x2_u05.bin | 3758ea627fe48f60ac55796300c0ae06 | N/A |
+ | fw_patch_8800d80x2_u05_ext0.bin | 7e6d1eeef8e9556db4f6d6e474b8f936 | N/A |
+ | fw_patch_8800d80x2_u05_ext1.bin | 9b5a1b154d483b4f7c4e0dfa64b21acc | Mar 16 2026 11:32:01 - git 3eb1a90 |
+ | fw_patch_table_8800d80x2_u05.bin | edc988c2b599ac3a135677dfe7ee3688 | Mar 16 2026 11:32:01 - git 3eb1a90 |
+ | lmacfw_rf_8800d80x2.bin | 4f26ddbbea4bceaa8cab73aee1a14524 | la Apr 30 2026 17:01:54 - gc4c24878 |
 
 ##  Directory: SDIO/driver_fw/fw\aic8800DC
 
@@ -194,10 +218,11 @@
  | fmacfwbt_8800D80_pcie.bin | e95e71ed6185d1d17b75c7a7b13dccb6 | la Dec 05 2025 19:48:43 - g586bc1e8 |
  | fmacfw_8800D80_pcie.bin | 6e36389ffb9629dc99302ed943af6a3f | la Dec 05 2025 19:48:08 - g586bc1e8 |
  | fw_adid_8800d80_u02.bin | f546881a81b960d89a672578eb45a809 | N/A |
- | fw_patch_8800d80_u02.bin | f5400db1d64e0150c3232eb53e7f78b6 | Aug 01 2025 11:05:26 - git a26f071 |
- | fw_patch_8800d80_u02_ext0.bin | 6fcbe60f7bcf7bc39bdf6e9c3fb7f1d8 | N/A |
+ | fw_patch_8800d80_u02.bin | c99dc03e81d35b2f79ce7602ec5d4a56 | N/A |
+ | fw_patch_8800d80_u02_ext0.bin | f612f4155a1cf0a344742819d2bf9e56 | N/A |
+ | fw_patch_8800d80_u02_ext1.bin | 1201b4e4d7d488ca85320a7a4518e983 | Apr 27 2026 19:32:28 - git da91de1 |
  | fw_patch_8800d80_u04.bin | 3761e5ee1d9ed73409057a0627e0109a | Mar 17 2025 11:19:53 - git d0a8209 |
- | fw_patch_table_8800d80_u02.bin | 54b15ce88b3b9ba14bf961e6f90839fc | Aug 01 2025 11:05:26 - git a26f071 |
+ | fw_patch_table_8800d80_u02.bin | c5628ff42a16bfddf98e2a01bb7fb4a4 | Apr 27 2026 19:32:28 - git da91de1 |
  | fw_patch_table_8800d80_u04.bin | 43327ec4d2282f64c065688f92f892d3 | Mar 17 2025 11:19:53 - git d0a8209 |
  | lmacfw_rf_pcie.bin | 8fca35449841b9f88facbb3cd459eaae | la Dec 05 2025 19:49:59 - g586bc1e8 |
 
@@ -205,15 +230,17 @@
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
- | fmacfw_8800D80X2_pcie.bin | f1ec06439eb8ac03a29ee948a5071569 | la Dec 05 2025 19:45:37 - g7c7d791 |
+ | fmacfwbt_8800D80X2_pcie.bin | a2cc8fe15426402057a29cb523e61e74 | bo Feb 25 2026 14:54:35 - g04380858 |
+ | fmacfw_8800D80X2_pcie.bin | b7201920a9b15e12266cd8cfe6f8d936 | la Apr 30 2026 17:01:25 - gc4c24878 |
  | fw_adid_8800d80x2_u05.bin | cdf8e2a582a88c765a47ca0538711390 | N/A |
  | fw_flsgen1_m80x2p.bin | 3ef083fa9b4246b4e3eba6464c3de7e4 | Sep 22 2023 17:22:52 - git 3944712 |
  | fw_flsgen2_m80x2p.bin | fb39b569161584e585f7682d180674f4 | Sep 22 2023 17:22:52 - git 3944712 |
  | fw_flsupg_m80x2p.bin | 2e3f96aaf71b20d01eaaba6fdfc97333 | Sep 22 2023 17:22:52 - git 3944712 |
- | fw_patch_8800d80x2_u05.bin | 3b372b269cec42930e41bba56304b679 | Aug 05 2025 16:29:00 - git a0dcd54 |
- | fw_patch_8800d80x2_u05_ext0.bin | 40771cb72a3101f14c4f265ac469afa8 | N/A |
- | fw_patch_table_8800d80x2_u05.bin | a74b3bdebabf7ac7fcb97aaeaf00bdf9 | Aug 05 2025 16:29:00 - git a0dcd54 |
- | lmacfw_rf_8800D80X2_pcie.bin | 4cc9749fa8c2c90b32930a406173fd60 | la Dec 05 2025 19:47:11 - g7c7d791 |
+ | fw_patch_8800d80x2_u05.bin | 3758ea627fe48f60ac55796300c0ae06 | N/A |
+ | fw_patch_8800d80x2_u05_ext0.bin | 7e6d1eeef8e9556db4f6d6e474b8f936 | N/A |
+ | fw_patch_8800d80x2_u05_ext1.bin | 9b5a1b154d483b4f7c4e0dfa64b21acc | Mar 16 2026 11:32:01 - git 3eb1a90 |
+ | fw_patch_table_8800d80x2_u05.bin | edc988c2b599ac3a135677dfe7ee3688 | Mar 16 2026 11:32:01 - git 3eb1a90 |
+ | lmacfw_rf_8800D80X2_pcie.bin | 1eebf01ddbed48c3e61b326c9e3e2b1b | la Apr 30 2026 17:02:52 - gc4c24878 |
 
 ##  Directory: tools/testmode_bin\AIC8800D80D40
 
@@ -221,20 +248,21 @@
  | --- | --- | --- |
  | testmode20_2025_1205_1950.bin | 94ee5bd9108005770c88b514efcf6b13 | la Dec 05 2025 19:50:21 - g586bc1e8 |
 
-##  Directory: tools/testmode_bin\AIC8800D80N
+##  Directory: tools/testmode_bin\AIC8800D80ND40N
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
- | testmode19_2025_1209_2033_g8ca3d35-20251208.bin | 8b8e51f04ecd7bc8ff692b257691c4a9 | la Dec 09 2025 20:33:22 - g8ca3d35 |
- | testmode19_2025_1209_2033_g8ca3d35-20251208_phydump256k.bin | 5ad5106cb9f22a7e9aa89b6b2853b87f | la Dec 09 2025 20:33:51 - g8ca3d35 |
+ | testmode19_2026_0430_2247_g70badde-20260430.bin | 9c029678a71a0f57388151bab0dbacdf | la Apr 30 2026 22:47:26 - g70badde |
+ | testmode19_2026_0430_2247_g70badde-20260430_phydump256k.bin | 59c71250f0ee58d51b5de6fd491bf9a4 | la Apr 30 2026 22:47:53 - g70badde |
+ | testmode19_2026_0508_1304_gd43aa9c-20260508.bin | 23212deddde7c7f24ef0bd72af74ae89 | la May 08 2026 13:05:07 - gd43aa9c |
+ | testmode19_2026_0508_1305_gd43aa9c-20260508_phydump256k.bin | 84dc1eb95f1b8a7b649853973aa6dbd6 | la May 08 2026 13:05:33 - gd43aa9c |
 
 ##  Directory: tools/testmode_bin\AIC8800D80X2
 
  | File Name | MD5SUM | Version String |
  | --- | --- | --- |
  | aic8822_cant_5f2f.bin | e88b75f43c9cf49898b1a73185169da8 | N/A |
- | aic8822_cant_5f2f_samsung.bin | 645e19dacfb3a642575651d36ea23e2b | N/A |
- | testmode22_2025_1205_1947.bin | e120e44f2ca85b5cd08b8c09235b124d | la Dec 05 2025 19:47:37 - g7c7d791 |
+ | testmode22_2026_0430_1838_gc4c24878-20260430.bin | c1ec18e7c40bcd3628defc0673681e1c | la Apr 30 2026 18:38:55 - gc4c24878 |
 
 ##  Directory: tools/testmode_bin\AIC8800DCDWDL
 

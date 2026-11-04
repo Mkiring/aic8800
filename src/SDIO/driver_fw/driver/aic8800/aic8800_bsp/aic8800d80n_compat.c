@@ -6,6 +6,11 @@
 #define RWNX_MAC_FW_CALIB_NAME_8800D80N_U02 "fmacfw_calib_8800d80n_u02.bin"
 #define RWNX_MAC_PATCH_NAME_8800D80N_U02    "fmacfw_patch_8800d80n_u02.bin"
 #define RWNX_MAC_PATCHTBL_NAME_8800D80N_U02 "fmacfw_patch_tbl_8800d80n_u02.bin"
+#define RWNX_MAC_FW_CINIT_NAME_8800D80N_U02C "fmacfw_cinit_8800d80n_u02c.bin"
+#define RWNX_MAC_FW_CALIB_NAME_8800D80N_U02C "fmacfw_calib_8800d80n_u02c.bin"
+#define RWNX_MAC_PATCH_NAME_8800D80N_U02C    "fmacfw_patch_8800d80n_u02c.bin"
+#define RWNX_MAC_PATCHTBL_NAME_8800D80N_U02C "fmacfw_patch_tbl_8800d80n_u02c.bin"
+
 
 #define RAM_LMAC_FW_RF_ADDR_8800D80N        0x00132C00
 #define ROM_FMAC_CINIT_ADDR_8800D80N_U02    0x00133000
@@ -29,11 +34,15 @@ u32 syscfg_tbl_masked_8800d80n[][3] = {
 u32 patch_tbl_wifisetting_8800d80n[][2] =
 {
     //{0x00b8, 0x00009d08 | (0x01U << 13)}, // debug_mask, bit13: CALIB_BIT
+#ifdef CONFIG_SDIO_BT
+    {0x004c, 0x02000101},
+#endif
     {0x170, 0x50000001}, //gpio_wakeup_en
 };
 
 //adap test
 u32 adaptivity_patch_tbl_8800d80n[][2] = {
+    {0x0160, 0x00010000},
 };
 
 u32 patch_tbl_rf_func_8800d80n[][2] =
@@ -71,10 +80,26 @@ int rwnx_plat_bin_fw_upload_2_with_version(struct aic_sdio_dev *rwnx_hw, u32 fw_
     if (version_str) {
         char *bin_str = (char *)&dst[4];
         int char_idx = 0;
+        int hdr_size = (int)(dst[3] & 0xFFF);
+        if (hdr_size) {
+            bin_str = (char *)&dst[0] + hdr_size;
+        } else {
+            int max_cnt = 512;
+            char *tmp = bin_str;
+            while (max_cnt--) {
+                if (((tmp[0] >= 'a') && (tmp[0] <= 'z')) &&
+                    ((tmp[1] >= 'a') && (tmp[1] <= 'z')) &&
+                    (tmp[2] == ' ') ){
+                    bin_str = tmp;
+                    break;
+                }
+                tmp++;
+            }
+        }
         for (char_idx = 0; char_idx < version_size; char_idx++) {
             version_str[char_idx] = bin_str[char_idx];
             if (bin_str[char_idx] == '\0') {
-                //break;
+                break;
             }
         }
         if (char_idx == version_size) {
@@ -162,8 +187,13 @@ int aicwf_plat_patch_load_8800d80n(struct aic_sdio_dev *rwnx_hw)
     int ret = 0;
     char patch_ver_str[128];
     //wifi patch
-    ret = rwnx_plat_bin_fw_upload_2_with_version(rwnx_hw,
-        ROM_FMAC_PATCH_ADDR_8800D80N_U02, RWNX_MAC_PATCH_NAME_8800D80N_U02, patch_ver_str, sizeof(patch_ver_str));
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_2_with_version(rwnx_hw,
+            ROM_FMAC_PATCH_ADDR_8800D80N_U02, RWNX_MAC_PATCH_NAME_8800D80N_U02, patch_ver_str, sizeof(patch_ver_str));
+    } else {
+        ret = rwnx_plat_bin_fw_upload_2_with_version(rwnx_hw,
+            ROM_FMAC_PATCH_ADDR_8800D80N_U02, RWNX_MAC_PATCH_NAME_8800D80N_U02C, patch_ver_str, sizeof(patch_ver_str));
+    }
     if (ret) {
         AICWFDBG(LOGERROR, "load patch bin fail: %d\n", ret);
         return ret;
@@ -177,9 +207,14 @@ int aicwf_plat_patch_table_load_8800d80n(struct aic_sdio_dev *rwnx_hw)
     int err = 0;
     unsigned int i, size;
     u32 *dst = NULL;
-    char *filename = RWNX_MAC_PATCHTBL_NAME_8800D80N_U02;
+    char *filename;
     struct device *dev = rwnx_hw->dev;
 
+    if (chip_sub_id == 1) {
+        filename = RWNX_MAC_PATCHTBL_NAME_8800D80N_U02;
+    } else {
+        filename = RWNX_MAC_PATCHTBL_NAME_8800D80N_U02C;
+    }
     /* Copy the file on the Embedded side */
     AICWFDBG(LOGINFO, "### Upload %s \n", filename);
 
@@ -369,7 +404,11 @@ int aicwf_plat_cinit_exec_8800d80n(struct aic_sdio_dev *rwnx_hw)
         AICWFDBG(LOGINFO, "cinit executed, chipinfo=%x\n", mem_val);
         return ret;
     }
-    ret = rwnx_plat_bin_fw_upload_android(rwnx_hw, ROM_FMAC_CINIT_ADDR_8800D80N_U02, RWNX_MAC_FW_CINIT_NAME_8800D80N_U02);
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_android(rwnx_hw, ROM_FMAC_CINIT_ADDR_8800D80N_U02, RWNX_MAC_FW_CINIT_NAME_8800D80N_U02);
+    } else {
+        ret = rwnx_plat_bin_fw_upload_android(rwnx_hw, ROM_FMAC_CINIT_ADDR_8800D80N_U02, RWNX_MAC_FW_CINIT_NAME_8800D80N_U02C);
+    }
     if (ret) {
         AICWFDBG(LOGERROR, "load cinit bin fail: %d\n", ret);
         return ret;
@@ -403,7 +442,12 @@ int aicwf_plat_calib_exec_8800d80n(struct aic_sdio_dev *rwnx_hw)
         AICWFDBG(LOGINFO, "calib executed, var_flags=%x\n", patch_var_flags_val);
         return ret;
     }
-    ret = rwnx_plat_bin_fw_upload_android(rwnx_hw, ROM_FMAC_CALIB_ADDR_8800D80N_U02, RWNX_MAC_FW_CALIB_NAME_8800D80N_U02);
+    if (chip_sub_id == 1) {
+        ret = rwnx_plat_bin_fw_upload_android(rwnx_hw, ROM_FMAC_CALIB_ADDR_8800D80N_U02, RWNX_MAC_FW_CALIB_NAME_8800D80N_U02);
+    } else {
+        ret = rwnx_plat_bin_fw_upload_android(rwnx_hw, ROM_FMAC_CALIB_ADDR_8800D80N_U02, RWNX_MAC_FW_CALIB_NAME_8800D80N_U02C);
+    }
+
     if (ret) {
         AICWFDBG(LOGERROR, "load calib bin fail: %d\n", ret);
         return ret;

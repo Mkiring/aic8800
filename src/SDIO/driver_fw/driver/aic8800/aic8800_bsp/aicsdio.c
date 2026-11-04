@@ -212,7 +212,7 @@ int aicbsp_set_subsys(int subsys, int state)
 #endif
 
 //#ifndef CONFIG_PLATFORM_ROCKCHIP
-//			aicbsp_sdio_exit();
+//	aicbsp_sdio_exit();
 //#endif
 		} else {
 		#ifndef CONFIG_PLATFORM_ROCKCHIP

@@ -466,10 +466,10 @@ typedef struct {
 #define CFG_USER_TX_USE_ANA_F_EN            (0)
 #define CFG_USER_APM_PRBRSP_OFFLOAD_DISABLE (defined(CONFIG_PRBREQ_REPORT))
 #define CFG_USER_HE_MU_EDCA_UPDATE_DISABLE  (0)
-#define CFG_USER_LOFT_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_CAPA_CALIB_DISABLE_DISABLE (0)
-#define CFG_USER_PWR_CALIB_DISABLE_DISABLE  (0)
-#define CFG_USER_IPA_CALIB_DISABLE_DISABLE  (0)
+#define CFG_USER_LOFT_CALIB_DISABLE         (0)
+#define CFG_USER_CAPA_CALIB_DISABLE         (0)
+#define CFG_USER_PWR_CALIB_DISABLE          (0)
+#define CFG_USER_IPA_CALIB_DISABLE          (0)
 
 u32 adaptivity_patch_tbl_8800d80[][2] = {
 	{0x000C, 0x0000320A}, //linkloss_thd
@@ -497,16 +497,16 @@ u32 patch_tbl_8800d80[][2] = {
             #if CFG_USER_HE_MU_EDCA_UPDATE_DISABLE
             USER_HE_MU_EDCA_UPDATE_DISABLE_FLAG |
             #endif
-            #if CFG_USER_LOFT_CALIB_DISABLE_DISABLE
+            #if CFG_USER_LOFT_CALIB_DISABLE
             USER_LOFT_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_CAPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_CAPA_CALIB_DISABLE
             USER_CAPA_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_PWR_CALIB_DISABLE_DISABLE
+            #if CFG_USER_PWR_CALIB_DISABLE
             USER_PWR_CALIB_DISABLE_FLAG |
             #endif
-            #if CFG_USER_IPA_CALIB_DISABLE_DISABLE
+            #if CFG_USER_IPA_CALIB_DISABLE
             USER_IPA_CALIB_DISABLE_FLAG |
             #endif
         0) & ~(

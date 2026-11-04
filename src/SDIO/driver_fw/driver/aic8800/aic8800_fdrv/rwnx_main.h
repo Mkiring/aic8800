@@ -32,6 +32,7 @@ void set_txpwrloss_ctrl(struct rwnx_hw *rwnx_hw, s8 value);
 void aicwf_pwrloss_worker(struct work_struct *work);
 #endif
 
+int rwnx_ic_rf_init(struct rwnx_hw *rwnx_hw);
 int rwnx_cfg80211_init(struct rwnx_plat *rwnx_plat, void **platform_data);
 void rwnx_cfg80211_deinit(struct rwnx_hw *rwnx_hw);
 extern int testmode;

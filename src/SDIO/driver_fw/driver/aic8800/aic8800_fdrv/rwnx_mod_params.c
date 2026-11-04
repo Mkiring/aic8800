@@ -1176,6 +1176,7 @@ static void rwnx_set_he_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 	he_cap = (struct ieee80211_sta_he_cap *) &rwnx_he_capa.he_cap;
 	he_cap->has_he = true;
 	he_cap->he_cap_elem.mac_cap_info[2] |= IEEE80211_HE_MAC_CAP2_ALL_ACK;
+	he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2;
 	if (rwnx_hw->mod_params->use_2040) {
 		he_cap->he_cap_elem.phy_cap_info[0] |=
 						IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;
@@ -1302,6 +1303,11 @@ static void rwnx_set_he_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 	he_cap = (struct ieee80211_sta_he_cap *) &band_2GHz->iftype_data->he_cap;
 	he_cap->has_he = true;
 	he_cap->he_cap_elem.mac_cap_info[2] |= IEEE80211_HE_MAC_CAP2_ALL_ACK;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+	he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_EXT_2;
+#else
+	he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2;
+#endif
 	if (rwnx_hw->mod_params->use_2040) {
 		he_cap->he_cap_elem.phy_cap_info[0] |=
 						IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;
@@ -1429,6 +1435,11 @@ static void rwnx_set_he_capa(struct rwnx_hw *rwnx_hw, struct wiphy *wiphy)
 		he_cap = (struct ieee80211_sta_he_cap *) &band_5GHz->iftype_data->he_cap;
 		he_cap->has_he = true;
 		he_cap->he_cap_elem.mac_cap_info[2] |= IEEE80211_HE_MAC_CAP2_ALL_ACK;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+		he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_EXT_2;
+#else
+		he_cap->he_cap_elem.mac_cap_info[3] |= IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2;
+#endif
 		if (rwnx_hw->mod_params->use_2040) {
 			he_cap->he_cap_elem.phy_cap_info[0] |=
 							IEEE80211_HE_PHY_CAP0_CHANNEL_WIDTH_SET_40MHZ_IN_2G;

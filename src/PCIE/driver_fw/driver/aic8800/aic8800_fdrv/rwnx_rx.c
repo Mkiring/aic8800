@@ -35,6 +35,10 @@
 #define IEEE80211_MAX_CHAINS 4
 #endif
 #include "rwnx_main.h"
+#ifdef CONFIG_SUPPORT_4ADDR
+#include <linux/if_bridge.h>
+#endif
+
 
 u8 dhcped; // = 0;
 
@@ -1868,6 +1872,9 @@ int reord_flush_tid(struct aicwf_rx_priv *rx_priv, struct sk_buff *skb, u8 tid)
 		mac = eh->h_dest;
 	else if ((rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP) || (rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_GO))
 		mac = eh->h_source;
+	else if(rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP_VLAN) {
+		mac = eh->h_source;
+	}
 	else {
 		AICWFDBG(LOGERROR, "error mode:%d!\n", rwnx_vif->wdev.iftype);
 		dev_kfree_skb(skb);
@@ -2194,7 +2201,9 @@ int reord_process_unit(struct aicwf_rx_priv *rx_priv, struct sk_buff *skb, u16 s
 		mac = eh->h_dest;
 	else if ((rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP) || (rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_GO))
 		mac = eh->h_source;
-	else {
+	else if(rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP_VLAN) {
+		mac = eh->h_source;
+	} else {
 		dev_kfree_skb(skb);
 		return -1;
 	}
@@ -2381,6 +2390,24 @@ void defrag_timeout_cb(struct timer_list *t)
 	kfree(defrag_ctrl);
 	spin_unlock_bh(&defrag_ctrl->rwnx_hw->defrag_lock);
 }
+
+#ifdef CONFIG_SUPPORT_4ADDR
+static int get_bridge_mac_address(struct net_device *dev, u8 *mac)
+{
+    struct net_device *upper_dev;
+    int ret = -ENODEV;
+
+    rcu_read_lock();
+    upper_dev = netdev_master_upper_dev_get_rcu(dev);
+    if (upper_dev && (upper_dev->priv_flags & IFF_EBRIDGE)) {
+        ether_addr_copy(mac, upper_dev->dev_addr);
+        ret = 0;
+    }
+    rcu_read_unlock();
+
+    return ret;
+}
+#endif
 
 extern void rwnx_data_dump(char* tag, void* data, unsigned long len);
 
@@ -2603,7 +2630,7 @@ check_len_update:
 				}
 				memcpy(ra, &skb->data[16], MAC_ADDR_LEN);
 				memcpy(ta, &skb->data[24], MAC_ADDR_LEN);
-				printk("4addr: da: %pM, sa: %pM\n", ra, ta);
+				// printk("4addr: da: %pM, sa: %pM\n", ra, ta);
 			} else {
 				if ((skb->data[1] & 0x3) == 0x1)  {// to ds
 					memcpy(ra, &skb->data[16], MAC_ADDR_LEN);
@@ -2912,6 +2939,17 @@ check_len_update:
 			rx_priv_tmp->rwnx_vif = (void *)rwnx_vif;
 
 			if ((rwnx_vif->wdev.iftype == NL80211_IFTYPE_STATION) || (rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_CLIENT)) {
+#ifdef CONFIG_SUPPORT_4ADDR
+				u8 br_mac[ETH_ALEN] = {0};
+				if (get_bridge_mac_address(rwnx_vif->ndev, br_mac) == 0) {
+					// printk("rx: ra: %pM, ta: %pM, dev: %pM, br: %pM\n", ra, ta, rwnx_vif->ndev->dev_addr, br_mac);
+					if (!memcmp(ta, br_mac, ETH_ALEN)) {
+						// printk("rx own mac: ta: %pM, br: %pM\n", ta, br_mac);
+						dev_kfree_skb(skb);
+						goto end;
+					}
+				}
+#endif
 				if (is_qos && hw_rxhdr->flags_need_reord)
 					reord_process_unit((struct aicwf_rx_priv *)rx_priv, skb, seq_num, tid, 1);
 				else if (is_qos  && !hw_rxhdr->flags_need_reord) {
@@ -2933,6 +2971,52 @@ check_len_update:
 #ifdef CONFIG_BAND_STEERING
 				(&rwnx_hw->sta_table[hw_rxhdr->flags_sta_idx])->rssi = hw_rxhdr->hwvect.rx_vect1.rssi1;
 #endif
+#if 1
+				skb_reset_mac_header(skb);
+				eth = eth_hdr(skb);
+				//printk("da:%pM, %x,%x, len=%d\n", eth->h_dest, skb->data[12], skb->data[13], skb->len);
+
+				if (unlikely(is_multicast_ether_addr(eth->h_dest))) {
+					/* broadcast pkt need to be forwared to upper layer and resent
+					   on wireless interface */
+					resend = true;
+				} else {
+					/* unicast pkt for STA inside the BSS, no need to forward to upper
+					   layer simply resend on wireless interface */
+					if (hw_rxhdr->flags_dst_idx != RWNX_INVALID_STA) {
+						struct rwnx_sta *sta = &rwnx_hw->sta_table[hw_rxhdr->flags_dst_idx];
+						if (sta->valid && (sta->vlan_idx == rwnx_vif->vif_index)) {
+							resend = true;
+							forward = false;
+						}
+					}
+				}
+
+				if (resend)
+					rwnx_rx_data_skb_resend(rwnx_hw, rwnx_vif, skb, hw_rxhdr);
+
+				if (forward) {
+					if (is_qos && hw_rxhdr->flags_need_reord)
+						reord_process_unit((struct aicwf_rx_priv *)rx_priv, skb, seq_num, tid, 1);
+					else if (is_qos  && !hw_rxhdr->flags_need_reord) {
+						reord_flush_tid((struct aicwf_rx_priv *)rx_priv, skb, tid);
+						rwnx_rx_data_skb_forward(rwnx_hw, rwnx_vif, skb, hw_rxhdr);
+					} else
+						rwnx_rx_data_skb_forward(rwnx_hw, rwnx_vif, skb, hw_rxhdr);
+				} else if(resend) {
+					if (is_qos && hw_rxhdr->flags_need_reord)
+						reord_process_unit((struct aicwf_rx_priv *)rx_priv, skb, seq_num, tid, 0);
+					else if (is_qos  && !hw_rxhdr->flags_need_reord) {
+						reord_flush_tid((struct aicwf_rx_priv *)rx_priv, skb, tid);
+						dev_kfree_skb(skb);
+					} 
+				}else
+					dev_kfree_skb(skb);
+#else
+				if (!rwnx_rx_data_skb(rwnx_hw, rwnx_vif, skb, hw_rxhdr))
+					dev_kfree_skb(skb);
+#endif
+			} else if (rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP_VLAN) {
 #if 1
 				skb_reset_mac_header(skb);
 				eth = eth_hdr(skb);

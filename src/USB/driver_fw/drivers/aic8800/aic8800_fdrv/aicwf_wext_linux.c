@@ -37,7 +37,7 @@
 
 /*				20/40/80,	ShortGI,	MCS Rate  */
 const u16 VHT_MCS_DATA_RATE[3][2][30] = {
-	{	
+	{
 		{
 			13, 26, 39, 52, 78, 104, 117, 130, 156, 156,
 			26, 52, 78, 104, 156, 208, 234, 260, 312, 312,
@@ -49,7 +49,7 @@ const u16 VHT_MCS_DATA_RATE[3][2][30] = {
 			43,	87, 130, 173, 260, 347, 390,	433,	520, 578
 		}
 	},		/* Short GI, 20MHz */
-	{	
+	{
 		{
 			27, 54, 81, 108, 162, 216, 243, 270, 324, 360,
 			54, 108, 162, 216, 324, 432, 486, 540, 648, 720,
@@ -61,7 +61,7 @@ const u16 VHT_MCS_DATA_RATE[3][2][30] = {
 			90, 180, 270, 360, 540, 720, 810, 900, 1080, 1200
 		}
 	},		/* Short GI, 40MHz */
-	{	
+	{
 		{
 			59, 117,  176, 234, 351, 468, 527, 585, 702, 780,
 			117, 234, 351, 468, 702, 936, 1053, 1170, 1404, 1560,
@@ -72,7 +72,7 @@ const u16 VHT_MCS_DATA_RATE[3][2][30] = {
 			130, 260, 390, 520, 780, 1040, 1170, 1300, 1560, 1734,
 			195, 390, 585, 780, 1170, 1560, 1755, 1950, 2340, 2600
 		}	/* Short GI, 80MHz */
-	}	
+	}
 };
 
 
@@ -93,7 +93,7 @@ const u16 HE_MCS_DATA_RATE[3][30] = {
 		540, 601, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	},	/* 80MHz */
-	
+
 };
 
 
@@ -108,7 +108,7 @@ static struct iw_statistics *aicwf_get_wireless_stats(struct net_device *dev)
 
 	struct rwnx_vif* rwnx_vif = netdev_priv(dev);
 	struct rwnx_hw* rwnx_hw = rwnx_vif->rwnx_hw;
-	struct rwnx_sta *sta = NULL; 
+	struct rwnx_sta *sta = NULL;
 
 	union rwnx_rate_ctrl_info *rate_info;
 	struct mm_get_sta_info_cfm cfm;
@@ -140,7 +140,7 @@ static int aicwf_get_name(struct net_device *dev,
 {
 	struct rwnx_vif* rwnx_vif = netdev_priv(dev);
 	struct rwnx_hw* rwnx_hw = rwnx_vif->rwnx_hw;
-	struct rwnx_sta *sta = NULL; 
+	struct rwnx_sta *sta = NULL;
 
 	union rwnx_rate_ctrl_info *rate_info;
 	struct mm_get_sta_info_cfm cfm;
@@ -151,7 +151,7 @@ static int aicwf_get_name(struct net_device *dev,
 		sta = rwnx_vif->sta.ap;
 		rwnx_send_get_sta_info_req(rwnx_hw, sta->sta_idx, &cfm);
 			rate_info = (union rwnx_rate_ctrl_info *)&cfm.rate_info;
-		
+
 			switch (rate_info->formatModTx) {
 			case FORMATMOD_NON_HT:
 			case FORMATMOD_NON_HT_DUP_OFDM:
@@ -180,7 +180,7 @@ static int aicwf_get_name(struct net_device *dev,
 #endif
 			}
 
-		
+
 	}else{
 		snprintf(wrqu->name, IFNAMSIZ, "unassociated");
 	}
@@ -341,7 +341,7 @@ static int aicwf_get_range(struct net_device *dev,
 	 *	range->max_retry;	 Maximal number of retries
 	 *	range->min_r_time;	 Minimal retry lifetime
 	 *	range->max_r_time;	 Maximal retry lifetime  */
-#if 0 
+#if 0
 	for (i = 0, val = 0; i < rfctl->max_chan_nums; i++) {
 
 		/* Include only legal frequencies for some countries */
@@ -426,7 +426,7 @@ static inline char *aicwf_get_iwe_stream_essid(struct rwnx_hw* rwnx_hw,
 	memset(ssid, 0, (ssid_len + 1));
 	memcpy(ssid, &ie[2], ssid_len);
 
-	
+
 	//AICWFDBG(LOGDEBUG, "%s len:%d ssid:%s\r\n", __func__, ssid_len, ssid);
 
 	/* Add the ESSID */
@@ -446,7 +446,7 @@ static inline char *aicwf_get_iwe_stream_protocol(struct rwnx_hw* rwnx_hw,
 		struct iw_request_info *info, struct scanu_result_wext *scan_re,
 		char *start, char *stop, struct iw_event *iwe)
 {
-	u16 ht_cap = false; 
+	u16 ht_cap = false;
 	u16 vht_cap = false;
 	u16 he_cap = false;
 	struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt*)scan_re->payload;
@@ -466,7 +466,7 @@ static inline char *aicwf_get_iwe_stream_protocol(struct rwnx_hw* rwnx_hw,
 	if (ie_content != NULL){
 		vht_cap = true;
 	}
-	
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)|| defined(CONFIG_HE_FOR_OLD_KERNEL)
 	/* parsing HE_CAP_IE	 */
 	ie_content = NULL;
@@ -499,7 +499,7 @@ static inline char *aicwf_get_iwe_stream_protocol(struct rwnx_hw* rwnx_hw,
 			snprintf(iwe->u.name, IFNAMSIZ, "IEEE 802.11bg");
 		}
 	}
-	
+
 	start = iwe_stream_add_event(info, start, stop, iwe, IW_EV_CHAR_LEN);
 	return start;
 }
@@ -519,9 +519,9 @@ static inline char *aicwf_get_iwe_stream_rssi(struct rwnx_hw* rwnx_hw,
 	iwe->u.qual.level = (u8)scan_re->ind->rssi;
 	iwe->u.qual.qual = 100;//scan_re->bss->signal;
 	iwe->u.qual.noise = 0;
-	
+
 	start = iwe_stream_add_event(info, start, stop, iwe, IW_EV_QUAL_LEN);
-	
+
 	return start;
 }
 
@@ -578,7 +578,7 @@ static inline char *aicwf_get_iwe_stream_encryption(struct rwnx_hw* rwnx_hw,
 	memset(ssid, 0, (ssid_len + 1));
 	memcpy(ssid, &ie[2], ssid_len);
 
-	
+
 	/* Add encryption capability */
 	iwe->cmd = SIOCGIWENCODE;
 	if (cap & WLAN_CAPABILITY_PRIVACY)
@@ -588,7 +588,7 @@ static inline char *aicwf_get_iwe_stream_encryption(struct rwnx_hw* rwnx_hw,
 	iwe->u.data.length = 0;
 	start = iwe_stream_add_point(info, start, stop, iwe, ssid);
 	vfree(ssid);
-	
+
 	return start;
 
 }
@@ -600,16 +600,16 @@ static inline char *aicwf_get_iwe_stream_rate(struct rwnx_hw* rwnx_hw,
 	struct ieee80211_mgmt *mgmt = (struct ieee80211_mgmt*)scan_re->payload;
 	u8 *payload = mgmt->u.beacon.variable;
 	const u8 *ie_content;
-	
+
 	u16 mcs_rate = 0;
 	u8 bw_40MHz = 0;
 	u8 short_GI = 0;
 	u16 max_rate = 0;
 	u8 bw_160MHz = 0;
-	
+
 	u16 ht_cap = false;
 	struct ieee80211_ht_cap *ht_capie;
-	
+
 	u16 vht_cap = false;
 	u8 tx_mcs_map[2];
 	u8 tx_mcs_index = 0;
@@ -627,8 +627,8 @@ static inline char *aicwf_get_iwe_stream_rate(struct rwnx_hw* rwnx_hw,
 	if (ie_content != NULL){
 		ht_cap = true;
 		ht_capie = (struct ieee80211_ht_cap *)(ie_content + 2);
-		bw_40MHz = (ht_capie->cap_info & NL80211_CHAN_WIDTH_40) ? 1 : 0;
-		short_GI = (ht_capie->cap_info & (IEEE80211_HT_CAP_SGI_20 | IEEE80211_HT_CAP_SGI_40)) ? 1 : 0;
+		bw_40MHz = ((ht_capie->cap_info & NL80211_CHAN_WIDTH_40) ? 1 : 0);
+		short_GI = ((ht_capie->cap_info & (IEEE80211_HT_CAP_SGI_20 | IEEE80211_HT_CAP_SGI_40)) ? 1 : 0);
 		memcpy(&mcs_rate, ht_capie->mcs.rx_mask, 2);
 	}
 
@@ -638,7 +638,7 @@ static inline char *aicwf_get_iwe_stream_rate(struct rwnx_hw* rwnx_hw,
 	ie_content = NULL;
 	ie_content = cfg80211_find_ie(WLAN_EID_VHT_CAPABILITY, payload, scan_re->ind->length);
 	if (ie_content != NULL){
-		
+
 		vht_cap = true;
 		bw_160MHz = ((*(u8*)(ie_content + 2)) >> 2) & ((u8)(0xFF >> (8 - (2))));
 		if (bw_160MHz){
@@ -699,10 +699,8 @@ static inline char *aicwf_get_iwe_stream_rate(struct rwnx_hw* rwnx_hw,
 	}else if (ht_cap == true) {
 		if (mcs_rate & 0x8000) /* MCS15 */
 			max_rate = (bw_40MHz) ? ((short_GI) ? 300 : 270) : ((short_GI) ? 144 : 130);
-	
-		else if (mcs_rate & 0x0080) /* MCS7 */
-			max_rate = (bw_40MHz) ? ((short_GI) ? 150 : 135) : ((short_GI) ? 72 : 65);
-		else { /* default MCS7 */
+
+		else { /* (mcs_rate & 0x0080): MCS7 */
 			max_rate = (bw_40MHz) ? ((short_GI) ? 150 : 135) : ((short_GI) ? 72 : 65);
 		}
 	}
@@ -860,9 +858,9 @@ static inline char *aicwf_get_iwe_stream_wps(struct rwnx_hw* rwnx_hw,
 	u8 *wpsie_ptr = NULL;
 	uint wps_ielen = 0;
 	u8 *ie_ptr = payload;
-	
+
 	total_ielen = scan_re->ind->length;
-	
+
 	while (cnt < total_ielen) {
 		if (aicwf_get_is_wps_ie(&ie_ptr[cnt], &wps_ielen) && (wps_ielen > 2)) {
 			wpsie_ptr = &ie_ptr[cnt];
@@ -897,7 +895,7 @@ static char *translate_scan(struct rwnx_hw* rwnx_hw,
 		return start;
 	} else{
 		return start;
-	}	
+	}
 }
 
 
@@ -911,7 +909,7 @@ static int aicwf_get_wap(struct net_device *dev,
 
 
 	AICWFDBG(LOGTRACE, "%s Enter", __func__);
-	
+
 	wrqu->ap_addr.sa_family = ARPHRD_ETHER;
 
 	memset(wrqu->ap_addr.sa_data, 0, ETH_ALEN);
@@ -952,7 +950,7 @@ static int aicwf_set_scan(struct net_device *dev, struct iw_request_info *a,
             return ret;
 	msleep(150);
     }
-	
+
 	rwnx_hw->wext_scan = 1;
 
 	request = (struct cfg80211_scan_request *)vmalloc(sizeof(struct cfg80211_scan_request));
@@ -964,7 +962,7 @@ static int aicwf_set_scan(struct net_device *dev, struct iw_request_info *a,
 	request->ie_len = 0;
 
 	for(index = 0;index < rwnx_hw->support_freqs_number; index++){
-		request->channels[index] = ieee80211_get_channel(wiphy, 
+		request->channels[index] = ieee80211_get_channel(wiphy,
 			rwnx_hw->support_freqs[index]);
 		if(request->channels[index] == NULL){
 			AICWFDBG(LOGERROR, "%s ERROR!!! channels is NULL", __func__);
@@ -1015,7 +1013,7 @@ static int aicwf_get_scan(struct net_device *dev, struct iw_request_info *a,
 	struct scanu_result_wext *tmp;
 	char *start = extra;
 	char *stop = start + wrqu->data.length;
-	
+
 	AICWFDBG(LOGDEBUG, "%s Enter %p %p len:%d \r\n", __func__, start, stop, wrqu->data.length);
 
 	//TODO: spinlock
@@ -1024,7 +1022,7 @@ static int aicwf_get_scan(struct net_device *dev, struct iw_request_info *a,
 		if ((stop - start) < 768) {
 			return -E2BIG;
 		}
-		
+
 	}
 
 	list_for_each_entry_safe(scan_re, tmp, &rwnx_hw->wext_scanre_list, scanu_re_list) {
@@ -1035,7 +1033,7 @@ static int aicwf_get_scan(struct net_device *dev, struct iw_request_info *a,
 		scan_re = NULL;
 	}
 
-	
+
 	wrqu->data.length = start - extra;
 	wrqu->data.flags = 0;
 
@@ -1051,7 +1049,7 @@ static int aicwf_get_essid(struct net_device *dev,
 	int ret = 0;
 	struct rwnx_vif* rwnx_vif = netdev_priv(dev);
 	struct rwnx_hw* rwnx_hw = rwnx_vif->rwnx_hw;
-	
+
 	AICWFDBG(LOGTRACE, "%s Enter", __func__);
 
 	wrqu->essid.length = strlen(rwnx_hw->wext_essid);
@@ -1068,7 +1066,7 @@ static int aicwf_get_nick(struct net_device *dev,
 			   struct iw_request_info *info,
 			   union iwreq_data *wrqu, char *extra)
 {
-			   
+
 	AICWFDBG(LOGTRACE, "%s Enter", __func__);
 
 	if (extra) {
@@ -1088,18 +1086,18 @@ static int aicwf_get_rate(struct net_device *dev,
 	u16 max_rate = 0;
 	struct rwnx_vif* rwnx_vif = netdev_priv(dev);
 	struct rwnx_hw* rwnx_hw = rwnx_vif->rwnx_hw;
-	struct rwnx_sta *sta = NULL; 
-	
+	struct rwnx_sta *sta = NULL;
+
 	union rwnx_rate_ctrl_info *rate_info;
 	struct mm_get_sta_info_cfm cfm;
-	
+
 	AICWFDBG(LOGTRACE, "%s Enter", __func__);
-	
+
 	if(rwnx_vif->sta.ap){
 		sta = rwnx_vif->sta.ap;
 		rwnx_send_get_sta_info_req(rwnx_hw, sta->sta_idx, &cfm);
 			rate_info = (union rwnx_rate_ctrl_info *)&cfm.rate_info;
-			
+
 			switch (rate_info->formatModTx) {
 			case FORMATMOD_NON_HT:
 			case FORMATMOD_NON_HT_DUP_OFDM:
@@ -1216,10 +1214,10 @@ struct iw_handler_def aic_handlers_def = {
 void aicwf_set_wireless_ext( struct net_device *ndev, struct rwnx_hw *rwnx_hw){
 
 	AICWFDBG(LOGINFO, "%s Enter", __func__);
-	
+
 	init_completion(&rwnx_hw->wext_scan_com);
 	INIT_LIST_HEAD(&rwnx_hw->wext_scanre_list);
-	
+
 	ndev->wireless_handlers = (struct iw_handler_def *)&aic_handlers_def;
 }
 

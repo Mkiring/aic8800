@@ -34,7 +34,7 @@ void aicwf_sdio_host_init(struct sdio_host_env_tag *env,
 volatile struct txdesc_host *aicwf_sdio_host_txdesc_get(struct sdio_host_env_tag *env, const int queue_idx)
 {
  //   struct ipc_shared_env_tag *shared_env_ptr = env->shared;
-    volatile struct txdesc_host *txdesc_free;
+    volatile struct txdesc_host *txdesc_free = NULL;
     uint32_t used_idx = env->txdesc_used_idx[queue_idx];
     uint32_t free_idx = env->txdesc_free_idx[queue_idx];
 
@@ -126,7 +126,7 @@ int aicwf_rwnx_sdio_platform_init(struct aic_sdio_dev *sdiodev)
 {
     struct rwnx_plat *rwnx_plat = NULL;
     void *drvdata;
-    int ret = -ENODEV;
+    int ret;
 
     rwnx_plat = kzalloc(sizeof(struct rwnx_plat), GFP_KERNEL);
 

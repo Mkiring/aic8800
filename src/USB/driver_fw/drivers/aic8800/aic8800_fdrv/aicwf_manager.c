@@ -285,7 +285,7 @@ void aicwf_nl_send_del_sta_msg(struct rwnx_vif *rwnx_vif, u8_l *mac)
 	hdr.id = AIC_ELM_INTF_ID;
 	hdr.len = ELM_INTF_LEN;
 	aicwf_netlink_set_msg(&msg, &msg_len, (void *)&hdr, ELM_HEADER_LEN);
-	
+
 	/* element: AIC_ELM_INTF_ID */
 	intf.root = 0; /* TBD */
 	intf.band = rwnx_vif->ap.band;
@@ -329,7 +329,7 @@ void aicwf_nl_send_new_sta_msg(struct rwnx_vif *rwnx_vif, u8_l *mac)
 	hdr.id = AIC_ELM_INTF_ID;
 	hdr.len = ELM_INTF_LEN;
 	aicwf_netlink_set_msg(&msg, &msg_len, (void *)&hdr, ELM_HEADER_LEN);
-	
+
 	/* element: AIC_ELM_INTF_ID */
 	intf.root = 0; /* TBD */
 	intf.band = rwnx_vif->ap.band;
@@ -498,7 +498,7 @@ void aicwf_nl_send_frame_rpt_msg(struct rwnx_vif *rwnx_vif, u16_l frame_type, u8
 	hdr.id = AIC_ELM_FRAME_INFO_ID;
 	hdr.len = ELM_FRAME_INFO_LEN;
 	aicwf_netlink_set_msg(&msg, &msg_len, (void *)&hdr, ELM_HEADER_LEN);
-	
+
 	/* element: AIC_ELM_FRAME_INFO_ID */
 	frame_info.frame_type = frame_type;
 	memcpy(frame_info.sa, sa, 6);
@@ -548,23 +548,23 @@ void aicwf_nl_send_time_tick_msg(struct rwnx_vif *rwnx_vif)
 	return;
 }
 
-void aicwf_nl_hook(struct rwnx_vif *rwnx_vif, u8_l band, u8_l ssid)
+void aicwf_nl_hook(struct rwnx_vif *rwnx_vif, u8_l band, u8_l iface_id)
 {
-	AICWFDBG(LOGSTEER, MANAGER_STR"%s band:%d, ssid:%d\n", __func__, band, ssid);
+	AICWFDBG(LOGSTEER, MANAGER_STR"%s band:%d, iface_id:%d\n", __func__, band, iface_id);
 
-	nl_hook[band][ssid] = 1;
-	nl_rwnx_vif[band][ssid] = rwnx_vif;
+	nl_hook[band][iface_id] = 1;
+	nl_rwnx_vif[band][iface_id] = rwnx_vif;
 
 	return;
 }
 
-void aicwf_nl_hook_deinit(u8_l band, u8_l ssid)
+void aicwf_nl_hook_deinit(u8_l band, u8_l iface_id)
 {
 
-	AICWFDBG(LOGSTEER, MANAGER_STR"%s band:%d, ssid:%d\n", __func__, band, ssid);
+	AICWFDBG(LOGSTEER, MANAGER_STR"%s band:%d, iface_id:%d\n", __func__, band, iface_id);
 
-	nl_hook[band][ssid] = 0;
-	nl_rwnx_vif[band][ssid] = NULL;
+	nl_hook[band][iface_id] = 0;
+	nl_rwnx_vif[band][iface_id] = NULL;
 
 	return;
 }

@@ -775,6 +775,9 @@ void uart_set_options(int baudrate, int databits,
     #endif
     #ifdef B921600
     case 921600: _baud=B921600; break;
+	#endif
+	#ifdef B1000000
+	case 1000000: _baud=B1000000; break;
     #endif
     #ifdef B1500000
     case 1500000: _baud=B1500000; break;

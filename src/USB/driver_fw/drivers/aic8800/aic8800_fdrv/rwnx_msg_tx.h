@@ -69,6 +69,7 @@ int rwnx_send_arpoffload_en_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_v
 int rwnx_send_rf_config_req(struct rwnx_hw *rwnx_hw, u8_l ofst, u8_l sel, u8_l *tbl, u16_l len);
 int rwnx_send_rf_config_v2_req(struct rwnx_hw *rwnx_hw, u16_l ofst, u8_l sel, u8_l *tbl, u16_l len);
 int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *cfm);
+int rwnx_send_rf_secure_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *cfm, int cal_step);
 int rwnx_send_get_macaddr_req(struct rwnx_hw *rwnx_hw, struct mm_get_mac_addr_cfm *cfm);
 
 #ifdef CONFIG_RWNX_FULLMAC
@@ -84,7 +85,7 @@ int rwnx_send_me_rc_stats(struct rwnx_hw *rwnx_hw, u8 sta_idx,
                           struct me_rc_stats_cfm *cfm);
 int rwnx_send_me_rc_set_rate(struct rwnx_hw *rwnx_hw,
                              u8 sta_idx,
-                             u16 rate_idx);
+                             u16 rate_cfg);
 int rwnx_send_me_set_ps_mode(struct rwnx_hw *rwnx_hw, u8 ps_mode);
 int rwnx_send_me_set_lp_level(struct rwnx_hw *rwnx_hw, u8 lp_level);
 int rwnx_send_sm_connect_req(struct rwnx_hw *rwnx_hw,
@@ -200,7 +201,10 @@ int rwnx_send_dummy_reboot(struct rwnx_hw *rwnx_hw);
 int rwnx_send_txpwr_per_sta_req(struct rwnx_hw *rwnx_hw, struct rwnx_sta *sta);
 #endif
 int rwnx_send_get_temp_req(struct rwnx_hw *rwnx_hw, s8_l *temp);
-
+#ifdef CONFIG_REKEY_OFFLOAD
+int rwnx_send_station_rekey_offload(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
+                        struct cfg80211_gtk_rekey_data *data);
+#endif
 //#ifdef CONFIG_USB_BT
 int rwnx_send_reboot(struct rwnx_hw *rwnx_hw);
 //#endif // CONFIG_USB_BT

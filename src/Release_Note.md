@@ -1,90 +1,110 @@
-# [Release_Note] aic8800d_linux_sdk_V5.0_2026_0123_5f7be68d
+# [Release_Note] aic8800d_linux_sdk_V5.0_2026_0509_2195ae36
 
 ## Driver
 
 ### All driver 
-- fix build error above kernel 6.12
-- set bt lpm_enable=0 when cpmode is rftest
-- fix powerlimit txt not ending with a newline panic
-- wifi mac no need + 4 (need fw support)
+- fix CHANNEL_ACCESS_REQ commond param err
+- support NL80211_IFTYPE_AP_VLAN
+- add IEEE80211_HE_MAC_CAP3_MAX_AMPDU_LEN_EXP_VHT_2 to fix be200/tplink-be9300 rxrate low in apmode
+- fix iw dev wlan0 station dump no output in stamode
+- fw_panic_ind update
+-  modify funcs use wrong vif when use P2P0
+- fix csa match vif fail when interface down
+- fix memleak with amsdu in ap mode
+- fix rwnx_txdatacfm cfg80211_mgmt_tx_status panic after del interface
+- 8800d80x2 user_ext_flags support USER_CAPA_CALIB_DISABLE_FLAG
+- rx msg add msgid parser, fix potential memleak if invalid msg taskid or id_idx recvd
+- default CONFIG_TEMP_COMP = y consistent with lmacfw
 
 ### USB driver
-- fix some issues with Bluetooth voice calls
-- change REORDER_UPDATE_TIME to 50
-- first add D80ND40N support
-- fix memory leak
-- fix some unused variable warning
--  move D80X2 bt patch to 0x120000, wifi fw to 0x128000 （need fw support）
-- [aic_btusb] add testmode module_param for d80n, add x2p pid 0x8da1
-- fix compile err above kernel 6.15
--  merge CONFIG_TEMP_CONTROL support
-- merge get_txpwr from SDIO drv
-- update aicwf_usb_resume, fix error after resume
+- support NL80211_IFTYPE_AP_VLAN
+- add set_chan_calib & rdwr_gpio rfcmd
+- compatibility D80ND40N
+- add RDWR_EFUSE_BT_LNA_MODE cmd
+- add CONFIG_REKEY_OFFLOAD for D80ND40N (need fw support)
 
 ### SDIO driver
-- update load 8800d80x2 sdio bt ext patch
+-  fix some build errors on kernel 5.15
 - first add D80ND40N support
-- fix memory leak
--  fix assert in connect with xiaomi_ax6000 router relay mode
-- support wowlan wake up
-- distinguish between hw/sw_vendor_config and hw/sw_vendor_config_x2
-- fix build error for kernel 3.10
+- fix D80X2 D80ND40N rftest error
+-  add temp ctrl api
 
 ### PCIE driver
-- sync KYLIN support from usb driver
-- fix cmd_wq create fail
-- fix driver download and load while a fake interrupt comes problem
-- add tx_thread CONFIG_TX_THREAD
-- add CONFIG_CACHE_GUARD, default y
-- update files in DEBIAN, support x86, add modprobe cfg80211
--  fix usbbt resume
-
-### bt_vendor 
-- add whitelist function after ble wakeup resume
-- fix colse CONFIG MULTI_ADV_ENABLE
-- fixed build err
-- modify msbc process and MASK MSBC PLC, use AIC PLC
-- fw log enable setting in aicbt.conf.
+- add m80x2p fw with usb bt support
+- add more arch support
 
 ### wifi_hal
 
-+ add set latency mode.
++ N/A
 
 ## BT Patch
 
-- **DC-H** modify for pta with adv and le scan, add skp evt for le con for wifi iperf > 100M;
-- **DC-H** modify for re_auth err in cts test;
-- **DC-H** add le_rem_con_param_req_neg_reply cmd patch, set reason to 0x3b;
-- **DC-H** add PROLINE check, ext fem, off as dft;
-- **DC-H** make adv priority to 31 only;
-- **DC-H** add wifi scan resch and modify for txpwr select err;
-- **DC-H** modify for coex evt duration min, which cause assert during sch insert;
-- **DC-H** modify for chmap init, which cause assert during le init;
-- **DC-H** modify for le evt duration_min max to 1.56ms.
+- D80ND40N
+
+  1.add patch for efuse_block_write;
+  2.add usb sleep mode, need lpm_en==2;
+  3.modify for sleep;
+  4.modify for sco data report err;
+  5.improve transmission rate and dynamically adjust power when wifi connect;
+  6.add set bt_pwr_ofst through hci cmd;
+  7.close iso feature, and add wakeup for ipc while deep sleep.
+  8.first add u02c bt patch
+
+- D80D40
+
+  1.fix a assert about error irq;
+  2.add ps evt duration when device as source;
+  3.fix the issue of music stuttering while inq;
+  4.modify for coex with sco;
+  5.add usb sleep mode;
+  6.fix the codes error that ble con_intv_max was not updated in the con upd;
+  7.modify for lmp packet type table req reply delay which make the lc state error;
+  8.modify for coex with btacl + lecon + btsniff mouse;
+  9.change the lmp name req before role switch;
+  10.add poll packet during page;
+  11.modify for scan and inq with page, and make ch_derta to 25 as dft;
+  12.modify for a2dp sink and btdm err irq;
+  13.modify for check rfcom of l2cap_info due to unknown cid;
+  14.add le enc tx delay for enc err, modify for err irq,and pta,add lpm==2 mode;
+  15.add page duration when a bt link has exist;
+  16.fix the esco would be established failed when desco equeals;
+  17.modify for ICR_LOWPOWER_WIFI_INIT_DONE_POS from 8 to 9,fix conflict of wifi fw;
+  18.add condition for wlan rf init;
+  19.add macro for pmic_pmu_init_u02_h and pmic_pmu_init_u02;
+  20.fix issue that rf lose when extwakeup occured while going to sleep;
+  21.modify for adv recovery with rpa, and le con err sync for first anchor point;
+  22.enable bb_rx_test_result_report patch;
+  23.allow role switch for pair issue,and fix assert about direct adv;
+  24.modify for role switch no rsp while iphone make mss twice in one enc pause;
+  25.modify for l2cap btbh err, case of sdp pkt too long;
+  26.add patch for uart resume while slp en to clean patch data type,and add lld scan high prio, both off as dft;
+  27.add l2cap compute, and modify for pta with file trans;
 
 ## WiFi Firmware
 
+### D80N/D40N
+
+-  解决优化配置 loft mem后出现的5G RX接收不满的问题
+- 修复部分非信令测试问题
+- 非信令固件增加 BT LNA MODE efuse bit配置
+- 优化杂散问题
+
 ### D80/D40X2
-- fix usb2.0 rx error
-- 优化 2.4g dpd校准、5g loft校准
+
+- 增加电容校准配置，固件默认开启，驱动可关闭
+- 缩减dpd/pwr功率校准时间，降低校准电流
+- 增加 8822S 支持
+- rftest增加 SET_CHAN_CALIB / RDWR_GPIO 命令
+- 优化非信令srrc指令
 
 ### D80D40 T/H 
-- fix bt_clk bug
-- mac addr mask
-- scanu result bugfix
-- 测试模式频偏校准支持设置0
-- fix WS8700 router 4xltf 连接问题
+- SDIO fix txpwr 18 with evm
 
 ### DCDWDL T/H
 
-+ update DL-H vcore to 900mV
-+ mac addr mask
-
 ## Tools
-- **wifi_test** Support DC D80 remain print when use get_mac_addr and get_bt_mac_addr.
-- **wifi_test** add cmd get_rssi
-- **bt_test** fix send wrong mac_addr
-- **bt_test** change pwrlimit to 0x7f
+- **wifi_test** add GET_BONDID cmd
+- new static code analysis tool cppcheck
 
 ## AIC_Docs
-- 
+- AIC8800D80N_RF_wifi_test_v20.pdf

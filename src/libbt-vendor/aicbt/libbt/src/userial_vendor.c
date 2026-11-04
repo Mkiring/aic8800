@@ -1840,6 +1840,21 @@ static bool userial_handle_cmd(unsigned char *recv_buffer, int total_length)
                 sco_cb.codec_para.output_rate   = 8000;
             }
             break;
+        case HCI_ACCEPT_ESCO_CONNECTION:
+            sco_cb.voice_settings = *(uint16_t*)&recv_buffer[19];
+            ALOGD("%s, HCI_ACCEPT_ESCO_CONNECTION, voice_settings=0x%x ", __func__,sco_cb.voice_settings);
+            if (sco_cb.voice_settings & 0x0003) {
+                sco_cb.codec_para.input_format  = ESCO_CODING_FORMAT_MSBC;
+                sco_cb.codec_para.output_format = ESCO_CODING_FORMAT_MSBC;
+                sco_cb.codec_para.input_rate    = 16000;
+                sco_cb.codec_para.output_rate   = 16000;
+            } else {
+                sco_cb.codec_para.input_format  = ESCO_CODING_FORMAT_LINEAR;
+                sco_cb.codec_para.output_format = ESCO_CODING_FORMAT_LINEAR;
+                sco_cb.codec_para.input_rate    = 8000;
+                sco_cb.codec_para.output_rate   = 8000;
+            }
+            break;
         case HCI_ENH_SETUP_ESCO_CONNECTION:
             ALOGD("%s, HCI_ENH_SETUP_ESCO_CONNECTION", __func__);
             memcpy(&sco_cb.esco_para, &recv_buffer[5], sizeof(sco_cb.esco_para));

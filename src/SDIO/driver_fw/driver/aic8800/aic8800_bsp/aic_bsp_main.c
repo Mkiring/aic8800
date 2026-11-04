@@ -242,6 +242,27 @@ const struct aicbsp_firmware fw_8800d80n_u02[] = {
 	},
 };
 
+const struct aicbsp_firmware fw_8800d80n_u02c[] = {
+	[AICBSP_CPMODE_WORK] = {
+		.desc          = "normal work mode(8800d80n sdio u02c)",
+		.bt_adid       = "fw_adid_8800d80n_u02c.bin",
+		.bt_patch      = "fw_patch_8800d80n_u02c.bin",
+		.bt_table      = "fw_patch_table_8800d80n_u02c.bin",
+		.wl_fw         = "fmacfw_8800d80.bin",
+		.bt_ext_patch  = "fw_patch_8800d80n_u02c_ext"
+	},
+
+	[AICBSP_CPMODE_TEST] = {
+		.desc          = "rf test mode(8800d80n sdio u02)",
+		.bt_adid       = "fw_adid_8800d80n_u02c.bin",
+		.bt_patch      = "fw_patch_8800d80n_rf_u02c.bin",
+		.bt_table      = "fw_patch_table_8800d80n_rf_u02c.bin",
+		.wl_fw         = "lmacfw_rf_8800d80n.bin",
+		.bt_ext_patch  = "fw_patch_8800d80n_rf_u02c_ext"
+	},
+};
+
+
 
 struct aicbsp_info_t aicbsp_info = {
 	.hwinfo_r = AICBSP_HWINFO_DEFAULT,

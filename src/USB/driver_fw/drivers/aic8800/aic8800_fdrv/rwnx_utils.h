@@ -16,15 +16,6 @@
 #include "aicwf_debug.h"
 
 
-#if 0
-#ifdef CONFIG_RWNX_DBG
-/*  #define RWNX_DBG(format, arg...) pr_warn(format, ## arg) */
-#define RWNX_DBG printk
-#else
-#define RWNX_DBG(a...) do {} while (0)
-#endif
-#endif
-
 
 
 enum rwnx_dev_flag {

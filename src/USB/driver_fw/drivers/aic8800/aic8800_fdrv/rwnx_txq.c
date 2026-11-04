@@ -29,7 +29,7 @@ static inline int rwnx_txq_sta_idx(struct rwnx_sta *sta, u8 tid)
                 return NX_FIRST_VIF_TXQ_IDX_FOR_OLD_IC + sta->vif_idx;
         }else{
                 return NX_FIRST_VIF_TXQ_IDX + sta->vif_idx;
-        }	
+        }
     }else{
         return (sta->sta_idx * NX_NB_TXQ_PER_STA) + tid;
     }
@@ -87,9 +87,9 @@ static inline struct rwnx_sta *rwnx_txq_2_sta(struct rwnx_txq *txq)
  * Each queue is initialized with the credit of @NX_TXQ_INITIAL_CREDITS.
  */
 static void rwnx_txq_init(struct rwnx_txq *txq, int idx, u8 status,
-                          struct rwnx_hwq *hwq, int tid,
+                          struct rwnx_hwq *hwq, int tid
 #ifdef CONFIG_RWNX_FULLMAC
-                          struct rwnx_sta *sta, struct net_device *ndev
+                          , struct rwnx_sta *sta, struct net_device *ndev
 #endif
                           )
 {
@@ -97,7 +97,7 @@ static void rwnx_txq_init(struct rwnx_txq *txq, int idx, u8 status,
     int nx_first_unk_txq_idx = NX_FIRST_UNK_TXQ_IDX;
     int nx_bcmc_txq_ndev_idx = NX_BCMC_TXQ_NDEV_IDX;
     int nx_first_vif_txq_idx = NX_FIRST_VIF_TXQ_IDX;
-	
+
     if((g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8801) ||
         ((g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8800DC ||
         g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8800DW) && chip_id < 3)){
@@ -127,9 +127,9 @@ static void rwnx_txq_init(struct rwnx_txq *txq, int idx, u8 status,
     txq->ps_id = LEGACY_PS_ID;
     if (idx < nx_first_vif_txq_idx) {
         int sta_idx = sta->sta_idx;
-        int tid = idx - (sta_idx * NX_NB_TXQ_PER_STA);
-        if (tid < NX_NB_TID_PER_STA)
-            txq->ndev_idx = NX_STA_NDEV_IDX(tid, sta_idx);
+        int tid_tmp = idx - (sta_idx * NX_NB_TXQ_PER_STA);
+        if (tid_tmp < NX_NB_TID_PER_STA)
+            txq->ndev_idx = NX_STA_NDEV_IDX(tid_tmp, sta_idx);
         else
             txq->ndev_idx = NDEV_NO_TXQ;
     } else if (idx < nx_first_unk_txq_idx) {
@@ -278,7 +278,7 @@ void rwnx_txq_sta_init(struct rwnx_hw *rwnx_hw, struct rwnx_sta *rwnx_sta,
     foreach_sta_txq(rwnx_sta, txq, tid, rwnx_hw) {
         rwnx_txq_init(txq, idx, status, &rwnx_hw->hwq[rwnx_tid2hwq[tid]], tid,
                       rwnx_sta, rwnx_vif->ndev);
-        txq->ps_id = rwnx_sta->uapsd_tids & (1 << tid) ? UAPSD_ID : LEGACY_PS_ID;
+        txq->ps_id = ((rwnx_sta->uapsd_tids & (1 << tid)) ? UAPSD_ID : LEGACY_PS_ID);
         idx++;
     }
 
@@ -780,20 +780,65 @@ void rwnx_txq_offchan_start(struct rwnx_hw *rwnx_hw)
  * If an AP_vlan vif is removed, then STA will be moved back to mastert AP vif.
  *
  */
-void rwnx_txq_sta_switch_vif(struct rwnx_sta *sta, struct rwnx_vif *old_vif,
+void rwnx_txq_sta_switch_vif(struct rwnx_sta *sta,
+                             struct rwnx_vif *old_vif,
                              struct rwnx_vif *new_vif)
 {
-    struct rwnx_hw *rwnx_hw = new_vif->rwnx_hw;
+    struct rwnx_hw *rwnx_hw;
     struct rwnx_txq *txq;
+    struct net_device *ndev;
     int i;
 
-    /* start TXQ on the new interface, and update ndev field in txq */
-    if (!netif_carrier_ok(new_vif->ndev))
-        netif_carrier_on(new_vif->ndev);
+    if (!new_vif) {
+        AICWFDBG(LOGERROR, "%s: new_vif is NULL!\n", __func__);
+        return;
+    }
+
+    rwnx_hw = new_vif->rwnx_hw;
+    ndev = new_vif->ndev;
+
+
+    if (!ndev) {
+        AICWFDBG(LOGERROR, "%s: new_vif->ndev is NULL!\n", __func__);
+        return;
+    }
+
+    if (!(ndev->reg_state == NETREG_REGISTERED)) {
+        AICWFDBG(LOGINFO, "%s: ndev %s not in REGISTERED state (state=%d)\n",
+                __func__, ndev->name, ndev->reg_state);
+    }
+
+    if (!netif_carrier_ok(ndev))
+        netif_carrier_on(ndev);
+
     txq = rwnx_txq_sta_get(sta, 0, rwnx_hw);
+    if (!txq) {
+        AICWFDBG(LOGERROR, "%s: failed to get txq for sta\n", __func__);
+        return;
+    }
+
+    AICWFDBG(LOGINFO, "switching STA %pM TXQs from vif %s to vif %s\n",
+             sta->mac_addr,
+             old_vif ? old_vif->ndev->name : "NULL",
+             ndev->name);
+
     for (i = 0; i < NX_NB_TID_PER_STA; i++, txq++) {
-        txq->ndev = new_vif->ndev;
-        netif_wake_subqueue(txq->ndev, txq->ndev_idx);
+        txq->ndev = ndev;
+
+        if (txq->ndev_idx >= ndev->num_tx_queues) {
+            AICWFDBG(LOGERROR, "%s: invalid ndev_idx=%d for ndev %s (max=%d)\n",
+                   __func__, txq->ndev_idx, ndev->name, ndev->num_tx_queues);
+            continue;
+        }
+
+        if (ndev->reg_state == NETREG_REGISTERED && netif_running(ndev)) {
+            netif_wake_subqueue(ndev, txq->ndev_idx);
+            AICWFDBG(LOGINFO, "woke subqueue %d on %s\n", txq->ndev_idx, ndev->name);
+        } else {
+            AICWFDBG(LOGINFO, "skip waking subqueue %d on %s (state=%d, running=%d)\n",
+                     txq->ndev_idx, ndev->name,
+                     ndev->reg_state, netif_running(ndev));
+        }
     }
 }
 #endif /* CONFIG_RWNX_FULLMAC */
@@ -1258,7 +1303,7 @@ void rwnx_hwq_process(struct rwnx_hw *rwnx_hw, struct rwnx_hwq *hwq)
 		if(txq->idx == TXQ_INACTIVE){
 			AICWFDBG(LOGERROR, "%s txq->idx == TXQ_INACTIVE \r\n", __func__);
             rwnx_txq_del_from_hw_list(txq);
-            rwnx_txq_flush(rwnx_hw, txq);            
+            rwnx_txq_flush(rwnx_hw, txq);
 			continue;
 		}
         BUG_ON(txq->idx == TXQ_INACTIVE);
@@ -1305,7 +1350,7 @@ void rwnx_hwq_process(struct rwnx_hw *rwnx_hw, struct rwnx_hwq *hwq)
 #ifndef CONFIG_ONE_TXQ
         /* restart netdev queue if number of queued buffer is below threshold */
 	    spin_lock_irqsave(&rwnx_hw->usbdev->tx_flow_lock, flags);
-		if (unlikely(txq->status & RWNX_TXQ_NDEV_FLOW_CTRL) &&            
+		if (unlikely(txq->status & RWNX_TXQ_NDEV_FLOW_CTRL) &&
 			skb_queue_len(&txq->sk_list) < RWNX_NDEV_FLOW_CTRL_RESTART) {
             txq->status &= ~RWNX_TXQ_NDEV_FLOW_CTRL;
 	    if(!rwnx_hw->usbdev->tbusy)

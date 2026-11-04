@@ -598,6 +598,7 @@ extern const struct aicbsp_firmware fw_8800d80_u01[];
 extern const struct aicbsp_firmware fw_8800d80_u02[];
 extern const struct aicbsp_firmware fw_8800d80_h_u02[];
 extern const struct aicbsp_firmware fw_8800d80n_u02[];
+extern const struct aicbsp_firmware fw_8800d80n_u02c[];
 extern const struct aicbsp_firmware fw_8800d80x2[];
 
 #endif

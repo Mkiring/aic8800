@@ -1173,7 +1173,8 @@ static int rwnx_open(struct net_device *dev)
 		/* For AP_vlan use same fw and drv indexes. We ensure that this index
 		   will not be used by fw for another vif by taking index >= NX_VIRT_DEV_MAX */
 		add_if_cfm.inst_nbr = rwnx_vif->drv_vif_index;
-		netif_tx_stop_all_queues(dev);
+
+		// netif_tx_stop_all_queues(dev);
 
 		/* Save the index retrieved from LMAC */
 		spin_lock_bh(&rwnx_hw->cb_lock);
@@ -1182,6 +1183,8 @@ static int rwnx_open(struct net_device *dev)
 		rwnx_hw->vif_started++;
 		rwnx_hw->vif_table[add_if_cfm.inst_nbr] = rwnx_vif;
 		spin_unlock_bh(&rwnx_hw->cb_lock);
+		AICWFDBG(LOGDEBUG, "%s ap create vif in rwnx_hw->vif_table[%d] \r\n",
+			__func__, rwnx_vif->vif_index);
 	} else {
 		/* Forward the information to the LMAC,
 		 *     p2p value not used in FMAC configuration, iftype is sufficient */
@@ -1677,6 +1680,7 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
 	AICWFDBG(LOGINFO, "rwnx_interface_add: %s, %d, %d\r\n", name, type, NL80211_IFTYPE_P2P_DEVICE);
 	// Look for an available VIF
 	if (type == NL80211_IFTYPE_AP_VLAN) {
+		AICWFDBG(LOGINFO, "%s NL80211_IFTYPE_AP_VLAN\n", __func__);
 		min_idx = NX_VIRT_DEV_MAX;
 		max_idx = NX_VIRT_DEV_MAX + NX_REMOTE_STA_MAX;
 	} else {
@@ -2326,6 +2330,12 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
 	AICWFDBG(LOGINFO, "change_if: %d to %d, %d, %d", vif->wdev.iftype, type, NL80211_IFTYPE_P2P_CLIENT, NL80211_IFTYPE_STATION);
 
+	if (vif->wdev.iftype == type) {
+		AICWFDBG(LOGINFO, "no need change iface, use_4addr=%d\n", params->use_4addr);
+		vif->use_4addr = params->use_4addr;
+		return 0;
+	}
+
 #ifndef CONFIG_RWNX_MON_DATA
 	if ((type == NL80211_IFTYPE_MONITOR) &&
 	   (RWNX_VIF_TYPE(vif) != NL80211_IFTYPE_MONITOR)) {
@@ -2365,6 +2375,7 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
 		memset(&vif->ap.bcn, 0, sizeof(vif->ap.bcn));
 		break;
 	case NL80211_IFTYPE_AP_VLAN:
+		AICWFDBG(LOGERROR, "%s AP_VLAN EPERM\n", __func__);
 		return -EPERM;
 	case NL80211_IFTYPE_MONITOR:
 		dev->type = ARPHRD_IEEE80211_RADIOTAP;
@@ -2375,8 +2386,10 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
 	}
 
 	vif->wdev.iftype = type;
-	if (params->use_4addr != -1)
+	if (params->use_4addr != -1) {
+		AICWFDBG(LOGINFO, "params->use_4addr: %d\n", params->use_4addr);
 		vif->use_4addr = params->use_4addr;
+	}
 	if (type == NL80211_IFTYPE_P2P_CLIENT || type == NL80211_IFTYPE_P2P_GO)
 		p2p = true;
 
@@ -3503,6 +3516,7 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
 
 			rwnx_hw->adding_sta = false;
 		} else  {
+			AICWFDBG(LOGERROR, "%s EINVAL\n", __func__);
 			return -EINVAL;
 		}
 	}
@@ -3530,6 +3544,8 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
 
 		vif = netdev_priv(params->vlan);
 		vlan_idx = vif->vif_index;
+		AICWFDBG(LOGDEBUG, "%s vlan, sta->vlan_idx: %d, vlan_idx: %d\n",
+				__func__, sta->vlan_idx, vlan_idx);
 
 		if (sta->vlan_idx != vlan_idx) {
 			struct rwnx_vif *old_vif;
@@ -3546,6 +3562,7 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
 
 			if ((RWNX_VIF_TYPE(old_vif) == NL80211_IFTYPE_AP_VLAN) &&
 				(old_vif->use_4addr)) {
+				AICWFDBG(LOGDEBUG, "clear old_vif ap_vlan\n");
 				old_vif->ap_vlan.sta_4a = NULL;
 			}
 		}
@@ -3662,7 +3679,7 @@ end:
 		timer_setup(&rwnx_vif->steer_timer, aicwf_steering_timeout, 0);
 #endif
 		aicwf_nl_hook(rwnx_vif, rwnx_vif->ap.band, rwnx_vif->rwnx_hw->iface_idx);
-		
+
 		INIT_WORK(&rwnx_vif->steer_work, aicwf_steering_work);
 #if 0
 		for (int i = 0; i < MAX_PENDING_PROBES; i++) {
@@ -3840,6 +3857,7 @@ static int rwnx_cfg80211_set_monitor_channel(struct wiphy *wiphy,
 			return -EBUSY;
 		}
 
+		memset(&mon_chandef, 0, sizeof(mon_chandef));
 		mon_chandef.chan = ieee80211_get_channel(wiphy, cfm.chan.prim20_freq);
 		mon_chandef.center_freq1 = cfm.chan.center1_freq;
 		mon_chandef.center_freq2 = cfm.chan.center2_freq;
@@ -3958,10 +3976,12 @@ static int rwnx_cfg80211_get_tx_power(struct wiphy *wiphy,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
  struct wireless_dev *wdev,
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
-										unsigned int link_id,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0)
+	int radio_idx,
 #endif
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 14, 0)
+	unsigned int link_id,
+#endif
 	int *mbm)
 {
     #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
@@ -6496,6 +6516,26 @@ int rwnx_cfg80211_init(struct rwnx_plat *rwnx_plat, void **platform_data)
 	rwnx_cfg80211_init_rfkill(wiphy);
 #endif
 
+#ifdef CONFIG_DYNAMIC_PWR
+	rwnx_hw->pwrloss_lvl = 0;
+	rwnx_hw->sta_rssi_idx = 0;
+	rwnx_hw->read_rssi_vif = vif;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+	init_timer(&rwnx_hw->pwrloss_timer);
+	rwnx_hw->pwrloss_timer.data = (ulong) vif;
+	rwnx_hw->pwrloss_timer.function = aicwf_pwrloss_timer;
+#else
+	timer_setup(&rwnx_hw->pwrloss_timer, aicwf_pwrloss_timer, 0);
+#endif
+	INIT_WORK(&rwnx_hw->pwrloss_work, aicwf_pwrloss_worker);
+	mod_timer(&rwnx_hw->pwrloss_timer, jiffies + msecs_to_jiffies(RSSI_GET_INTERVAL));
+#endif
+#ifdef CONFIG_FOR_IPCAM
+	if(!testmode && !adap_test) {
+		aic_ipc_setting(vif);
+	}
+#endif
+
 #ifdef  CONFIG_USE_P2P0
 
 	rtnl_lock();
@@ -6526,20 +6566,6 @@ int rwnx_cfg80211_init(struct rwnx_plat *rwnx_plat, void **platform_data)
 	atomic_set(&rwnx_hw->p2p_alive_timer_count, 0);
 #endif
 
-#ifdef CONFIG_DYNAMIC_PWR
-	rwnx_hw->pwrloss_lvl = 0;
-	rwnx_hw->sta_rssi_idx = 0;
-	rwnx_hw->read_rssi_vif = vif;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
-	init_timer(&rwnx_hw->pwrloss_timer);
-	rwnx_hw->pwrloss_timer.data = (ulong) vif;
-	rwnx_hw->pwrloss_timer.function = aicwf_pwrloss_timer;
-#else
-	timer_setup(&rwnx_hw->pwrloss_timer, aicwf_pwrloss_timer, 0);
-#endif
-	INIT_WORK(&rwnx_hw->pwrloss_work, aicwf_pwrloss_worker);
-	mod_timer(&rwnx_hw->pwrloss_timer, jiffies + msecs_to_jiffies(RSSI_GET_INTERVAL));
-#endif
 #ifdef CONFIG_DYNAMIC_PERPWR
 	rwnx_hw->pwrth.rssi_thd_0 = RSSI_THD_0;
 	rwnx_hw->pwrth.rssi_thd_1 = RSSI_THD_1;
@@ -6548,12 +6574,6 @@ int rwnx_cfg80211_init(struct rwnx_plat *rwnx_plat, void **platform_data)
 	rwnx_hw->pwrth.pwr_loss_lvl_1 = PWR_LOSS_LVL1;
 	rwnx_hw->pwrth.pwr_loss_lvl_2 = PWR_LOSS_LVL2;
 	rwnx_hw->pwrth.pwr_loss_lvl_3 = PWR_LOSS_LVL3;
-#endif
-
-#ifdef CONFIG_FOR_IPCAM
-	if(!testmode && !adap_test) {
-		aic_ipc_setting(vif);
-	}
 #endif
 
 #ifdef CONFIG_BAND_STEERING

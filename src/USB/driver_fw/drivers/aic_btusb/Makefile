@@ -4,6 +4,11 @@ CONFIG_AIC8800_BTUSB_SUPPORT = m
 CONFIG_SUPPORT_VENDOR_APCF = n
 # Need to set fw path in BOARD_KERNEL_CMDLINE
 CONFIG_USE_FW_REQUEST = n
+# If you need to use the feature of waking up with BLE during STR Suspend sleep, please enable this macro.
+CONFIG_BT_WAKEUP_IN_PM = n
+# If CONFIG_BT_WAKEUP_IN_PM = y, you can choose GPIO High or low trigger method, Or GPIO waveform trigger method
+CONFIG_WOBLE_WAVEFORM = n
+
 
 ifeq ($(CONFIG_SUPPORT_VENDOR_APCF), y)
 obj-$(CONFIG_AIC8800_BTUSB_SUPPORT) := $(MODULE_NAME).o aic_btusb_external_featrue.o
@@ -12,6 +17,11 @@ obj-$(CONFIG_AIC8800_BTUSB_SUPPORT) := $(MODULE_NAME).o
 endif
 
 ccflags-$(CONFIG_SUPPORT_VENDOR_APCF) += -DCONFIG_SUPPORT_VENDOR_APCF
+ccflags-$(CONFIG_BT_WAKEUP_IN_PM) += -DCONFIG_BT_WAKEUP_IN_PM
+ifeq ($(CONFIG_BT_WAKEUP_IN_PM), y)
+ccflags-$(CONFIG_WOBLE_WAVEFORM) += -DCONFIG_WOBLE_WAVEFORM
+endif
+
 #$(MODULE_NAME)-y := aic_btusb_ioctl.o\
 #	aic_btusb.o \
 
@@ -27,7 +37,6 @@ CONFIG_PLATFORM_UBUNTU ?= y
 
 # MTK linux platform use bluedroid
 CONFIG_PLATFORM_MTK_LINUX ?= n
-
 
 ifeq ($(CONFIG_PLATFORM_ROCKCHIP), y)
 ccflags-$(CONFIG_PLATFORM_ROCKCHIP) += -DCONFIG_PLATFORM_ROCKCHIP

@@ -736,11 +736,11 @@ struct amsdu_subframe_hdr {
 /* rwnx driver status */
 void rwnx_set_conn_state(struct rwnx_vif *vif, atomic_t *drv_conn_state, int state);
 
-enum rwnx_drv_connect_status { 
+enum rwnx_drv_connect_status {
 	RWNX_DRV_STATUS_DISCONNECTED = 0,
-	RWNX_DRV_STATUS_DISCONNECTING, 
-	RWNX_DRV_STATUS_CONNECTING, 
-	RWNX_DRV_STATUS_CONNECTED, 
+	RWNX_DRV_STATUS_DISCONNECTING,
+	RWNX_DRV_STATUS_CONNECTING,
+	RWNX_DRV_STATUS_CONNECTED,
 	RWNX_DRV_STATUS_ROAMING,
 };
 
@@ -865,7 +865,7 @@ struct rwnx_hw {
     struct workqueue_struct *apmStaloss_wq;
     u8 apm_vif_idx;
     u8 sta_mac_addr[6];
-    
+
     struct wakeup_source *ws_rx;
     struct wakeup_source *ws_irqrx;
     struct wakeup_source *ws_tx;
@@ -873,7 +873,7 @@ struct rwnx_hw {
 
 #ifdef CONFIG_SCHED_SCAN
         bool is_sched_scan;
-#endif//CONFIG_SCHED_SCAN 
+#endif//CONFIG_SCHED_SCAN
 
 	struct sta_tx_flowctrl sta_flowctrl[NX_REMOTE_STA_MAX];
 #if 0
@@ -923,16 +923,16 @@ struct rwnx_hw {
 
 u8 *rwnx_build_bcn(struct rwnx_bcn *bcn, struct cfg80211_beacon_data *new);
 
-void rwnx_chanctx_link(struct rwnx_vif *vif, u8 idx,
+void rwnx_chanctx_link(struct rwnx_vif *vif, u8 ch_idx,
                         struct cfg80211_chan_def *chandef);
 void rwnx_chanctx_unlink(struct rwnx_vif *vif);
-int  rwnx_chanctx_valid(struct rwnx_hw *rwnx_hw, u8 idx);
+int  rwnx_chanctx_valid(struct rwnx_hw *rwnx_hw, u8 ch_idx);
 
 extern u8 chip_id;
 static inline bool is_multicast_sta(int sta_idx)
 {
 
-	if((g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8801) || 
+	if((g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8801) ||
 		((g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8800DC ||
 		g_rwnx_plat->usbdev->chipid == PRODUCT_ID_AIC8800DW) && chip_id < 3)){
 		return (sta_idx >= NX_REMOTE_STA_MAX_FOR_OLD_IC);

@@ -57,11 +57,11 @@ void get_userconfig_txpwr_ofst(txpwr_ofst_conf_t *txpwr_ofst);
 void rwnx_plat_userconfig_set_value(char *command, char *value);
 void rwnx_plat_userconfig_parsing(char *buffer, int size);
 
-int aic_bt_platform_init(struct aic_usb_dev *sdiodev);
+int aic_bt_platform_init(struct aic_usb_dev *usbdev);
 
-void aic_bt_platform_deinit(struct aic_usb_dev *sdiodev);
+void aic_bt_platform_deinit(struct aic_usb_dev *usbdev);
 
-int rwnx_plat_bin_fw_upload_android(struct aic_usb_dev *sdiodev, u32 fw_addr,
+int rwnx_plat_bin_fw_upload_android(struct aic_usb_dev *usbdev, u32 fw_addr,
                                char *filename);
 
 int rwnx_plat_m2d_flash_ota_android(struct aic_usb_dev *usbdev, char *filename);

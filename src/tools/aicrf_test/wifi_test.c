@@ -704,10 +704,15 @@ int wifi_send_cmd_to_net_interface(const char* if_name, int argC, char *argV[])
 		} else {
 			printf("check flash crc fail, get_crc is 0x%x, bin_crc is 0x%x\n", get_crc, bin_crc);
 		}
+        } else if (strcasecmp(argV[2], "GET_BONDID") == 0) {
+                printf("done: bondid = 0x%x\n", *(uint *)&priv_cmd.buf[0]);
 	} else if (strcasecmp(argV[2], "GET_RSSI") == 0) {
 		printf("done: get rssi = %d\n", *(char *)&priv_cmd.buf[0]);
         } else if(strcasecmp(argV[2], "GET_2ANT_RSSI") == 0) {
 		printf("rssi=%d,%d\n", priv_cmd.buf[0], priv_cmd.buf[1]);
+        } else if(strcasecmp(argV[2], "RDWR_GPIO") == 0 ||
+		strcasecmp(argV[2], "RDWR_EFUSE_BT_LNA_MODE") == 0) {
+                printf("val=%d\n", priv_cmd.buf[0]);
 	} else {
 		printf("done\n");
 	}

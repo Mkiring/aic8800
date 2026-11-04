@@ -416,6 +416,7 @@ enum mm_msg_tag {
     MM_VENDOR_SWCONFIG_IND,
     MM_FW_PANIC_IND,
 	MM_FW_ASSERT_IND,
+	MM_MCC_STATUS_IND = MM_FW_ASSERT_IND + 100,
 
     /// MAX number of messages
     MM_MAX,
@@ -1981,6 +1982,12 @@ struct fw_assert_info_ind
     uint8_t info[384];
 };
 
+struct mcc_status_ind
+{
+    uint8_t channel_number;
+    uint8_t mcc;
+    uint8_t scc;
+};
 
 enum vendor_hwconfig_tag{
 	ACS_TXOP_REQ = 0,

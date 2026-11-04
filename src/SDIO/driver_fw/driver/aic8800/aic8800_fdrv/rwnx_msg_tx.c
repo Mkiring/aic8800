@@ -547,6 +547,7 @@ int rwnx_send_add_if (struct rwnx_hw *rwnx_hw, const unsigned char *mac,
 		add_if_req_param->type = MM_MESH_POINT;
 		break;
 	case NL80211_IFTYPE_AP_VLAN:
+		AICWFDBG(LOGINFO, "%s AP_VLAN error\n", __func__);
 		return -1;
 	case NL80211_IFTYPE_MONITOR:
 		add_if_req_param->type = MM_MONITOR;
@@ -1116,7 +1117,7 @@ int rwnx_send_rf_calib_req(struct rwnx_hw *rwnx_hw, struct mm_set_rf_calib_cfm *
 	
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
 	
-	if((rwnx_hw->sdiodev->chipid == PRODUCT_ID_AIC8800D80X2))
+	if(rwnx_hw->sdiodev->chipid == PRODUCT_ID_AIC8800D80X2)
 	{
 		struct mm_set_rf_calib_req_v2 *rf_calib_req;
 		struct mm_set_rf_calib_cfm_v2 cfm2;
@@ -1420,33 +1421,59 @@ int rwnx_send_set_stack_start_req(struct rwnx_hw *rwnx_hw, u8_l on, u8_l efuse_v
 	return error;
 }
 
-int rwnx_send_get_temp_req(struct rwnx_hw *rwnx_hw, struct mm_set_vendor_swconfig_cfm *cfm)
+
+int rwnx_send_get_temp_req(struct rwnx_hw *rwnx_hw, s8_l *temp)
 {
-	struct mm_set_vendor_swconfig_req *req;
-	int ret;
+	struct mm_get_chip_temp_req *hwreq;
+	struct mm_set_vendor_swconfig_req *swreq;
+	struct mm_set_vendor_hwconfig_cfm hwcfm;
+	struct mm_set_vendor_swconfig_cfm swcfm;
+	int ret = 0;
 
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
 
-	/* Build the TEMP_COMP_GET_REQ message */
-	req = rwnx_msg_zalloc(MM_SET_VENDOR_SWCONFIG_REQ, TASK_MM, DRV_TASK_ID, sizeof(struct mm_set_vendor_swconfig_req));
-	if (!req) {
-		AICWFDBG(LOGINFO, "%s msg_alloc fail\n", __func__);
-		return -ENOMEM;
-	}
-	req->swconfig_id = TEMP_COMP_GET_REQ;
+	if(rwnx_hw->sdiodev->chipid == PRODUCT_ID_AIC8800DC ||
+		rwnx_hw->sdiodev->chipid == PRODUCT_ID_AIC8800DW){
+		/* Build the CHIP_TEMP_GET_REQ message */
+		hwreq = rwnx_msg_zalloc(MM_SET_VENDOR_HWCONFIG_REQ, TASK_MM, DRV_TASK_ID, sizeof(struct mm_get_chip_temp_req));
+		if (!hwreq)
+			return -ENOMEM;
+		hwreq->hwconfig_id = CHIP_TEMP_GET_REQ;
+		/* Send the MM_SET_VENDOR_HWCONFIG_REQ	message to UMAC FW */
+		ret = rwnx_send_msg(rwnx_hw, hwreq, 1, MM_SET_VENDOR_HWCONFIG_CFM, &hwcfm);
+		if (!ret) {
+			AICWFDBG(LOGINFO, "get_chip_temp degree=%d\n", hwcfm.chip_temp_cfm.degree);
+			*temp = hwcfm.chip_temp_cfm.degree;
+		} else {
+			AICWFDBG(LOGINFO, "get_chip_temp err=%d\n", ret);
+			return ret;
+		}
+	} else {
+		/* Build the TEMP_COMP_GET_REQ message */
+		swreq = rwnx_msg_zalloc(MM_SET_VENDOR_SWCONFIG_REQ, TASK_MM, DRV_TASK_ID, sizeof(struct mm_set_vendor_swconfig_req));
+		if (!swreq) {
+			AICWFDBG(LOGINFO, "%s msg_alloc fail\n", __func__);
+			return -ENOMEM;
+		}
+		swreq->swconfig_id = TEMP_COMP_GET_REQ;
 
-	ret = rwnx_send_msg(rwnx_hw, req, 1, MM_SET_VENDOR_SWCONFIG_CFM, cfm);
-	if (!ret)
-		AICWFDBG(LOGINFO, "status=%d, temp=%d\n", cfm->temp_comp_get_cfm.status, cfm->temp_comp_get_cfm.degree);
-	else {
-		AICWFDBG(LOGINFO, "%s msg_fail\n", __func__);
-		return ret;
+		ret = rwnx_send_msg(rwnx_hw, swreq, 1, MM_SET_VENDOR_SWCONFIG_CFM, &swcfm);
+		if (!ret) {
+			AICWFDBG(LOGINFO, "status=%d, temp=%d\n", swcfm.temp_comp_get_cfm.status, swcfm.temp_comp_get_cfm.degree);
+			*temp = swcfm.temp_comp_get_cfm.degree;
+		} else {
+			AICWFDBG(LOGINFO, "%s msg_fail\n", __func__);
+			return ret;
+		}
 	}
-	//rwnx_hw->started_jiffies = jiffies;
-	rwnx_hw->temp = cfm->temp_comp_get_cfm.degree;
+
+#ifdef CONFIG_TEMP_CONTROL
+	rwnx_hw->temp = *temp;
+#endif
 
 	return ret;
 }
+
 
 
 #ifdef CONFIG_TEMP_COMP
@@ -1736,6 +1763,11 @@ int rwnx_send_vendor_swconfig_req(struct rwnx_hw *rwnx_hw, uint32_t swconfig_id,
                 printk("cfm flags=%x\n", cfm.ext_flags_mask_set_cfm.user_flags);
             }
             break;
+        case FWLOG_REDIR_ENABLE_REQ:
+            req->fwlog_redir_req.enable = param_in[0];
+            printk("aicwf fwlog_redir_req.enable: %d\n", req->fwlog_redir_req.enable);
+            error = rwnx_send_msg(rwnx_hw, req, 1, MM_SET_VENDOR_SWCONFIG_CFM, &cfm);
+            break;
 
         default:
             error = -ENOMEM;
@@ -2018,6 +2050,23 @@ int rwnx_send_vendor_hwconfig_req_x2(struct rwnx_hw *rwnx_hw, uint32_t hwconfig_
             AICWFDBG(LOGINFO, "set on_air duty cycle: enable=%d, percent=%d\n", (u8)param[0], (u8)param[1]);
         }
         break;
+	    case MSIC_CTRL_REQ_X2:
+        {
+            struct mm_set_misc_ctrl_req *req;
+            req = rwnx_msg_zalloc(MM_SET_VENDOR_HWCONFIG_REQ, TASK_MM, DRV_TASK_ID, sizeof(struct mm_set_misc_ctrl_req));
+            if (!req)
+                return -ENOMEM;
+
+            req->hwconfig_id = hwconfig_id;
+            req->ctrl[0] = (u8)param[0];
+
+            error = rwnx_send_msg(rwnx_hw, req, 1, MM_SET_VENDOR_HWCONFIG_CFM, NULL);
+            if (error) {
+                AICWFDBG(LOGERROR, "set msic_ctrl err=%d\n", error);
+            }
+            AICWFDBG(LOGINFO, "set msic_ctrl: %d\n", (u8)param[0]);
+        }
+        break;
 	    default:
 		return -ENOMEM;
 	}
@@ -2120,6 +2169,11 @@ int rwnx_send_vendor_swconfig_req_x2(struct rwnx_hw *rwnx_hw, uint32_t swconfig_
                 AICWFDBG(LOGINFO, "get 2 ant rssi fail\n");
             } else
                 param_out[0] = *((u32 *)&cfm + 1);
+            break;
+        case FWLOG_REDIR_ENABLE_REQ_X2:
+            req->fwlog_redir_req.enable = param_in[0];
+            printk("aicwf fwlog_redir_req.enable: %d\n", req->fwlog_redir_req.enable);
+            error = rwnx_send_msg(rwnx_hw, req, 1, MM_SET_VENDOR_SWCONFIG_CFM, &cfm);
             break;
         default:
             error = -ENOMEM;
@@ -3085,6 +3139,7 @@ int rwnx_send_me_config_req(struct rwnx_hw *rwnx_hw)
 	return rwnx_send_msg(rwnx_hw, req, 1, ME_CONFIG_CFM, NULL);
 }
 
+int performance_power_flag = 0;
 int rwnx_send_me_chan_config_req(struct rwnx_hw *rwnx_hw, char *ccode)
 {
 	struct me_chan_config_req *req;
@@ -3131,13 +3186,22 @@ int rwnx_send_me_chan_config_req(struct rwnx_hw *rwnx_hw, char *ccode)
 			req->chan2G4[req->chan2G4_cnt].tx_power = chan_to_fw_pwr(b->channels[i].max_power);
 #ifdef CONFIG_POWER_LIMIT
 			{
+    			if(performance_power_flag){
+                    max_pwr = 30;
+                }else{
 				max_pwr = get_powerlimit_by_freq(PHY_BAND_2G4, req->chan2G4[req->chan2G4_cnt].freq, r_idx);
+                }
 				if (txpwr_loss->loss_enable_2g4 == 1)
 					max_pwr -= txpwr_loss->loss_value_2g4;
 				if (req->chan2G4[req->chan2G4_cnt].tx_power > max_pwr)
 					req->chan2G4[req->chan2G4_cnt].tx_power = max_pwr;
 			}
 #endif
+			if(req->chan2G4[req->chan2G4_cnt].tx_power < 8){
+				pr_err("chan %d max_tx_pwr %d set_txpwr 8 \n",req->chan2G4_cnt,req->chan2G4[req->chan2G4_cnt].tx_power);
+				req->chan2G4[req->chan2G4_cnt].tx_power = 8;
+			}
+
 			req->chan2G4_cnt++;
 			if (req->chan2G4_cnt == MAC_DOMAINCHANNEL_24G_MAX)
 				break;
@@ -3157,13 +3221,23 @@ int rwnx_send_me_chan_config_req(struct rwnx_hw *rwnx_hw, char *ccode)
 			req->chan5G[req->chan5G_cnt].tx_power = chan_to_fw_pwr(b->channels[i].max_power);
 #ifdef CONFIG_POWER_LIMIT
 			{
+			    if(performance_power_flag){
+                    max_pwr = 30;
+                }else{
 				max_pwr = get_powerlimit_by_freq( PHY_BAND_5G, req->chan5G[req->chan5G_cnt].freq, r_idx);
+                }
 				if (txpwr_loss->loss_enable_5g == 1)
 					max_pwr -= txpwr_loss->loss_value_5g;
 				if (req->chan5G[req->chan5G_cnt].tx_power > max_pwr)
 					req->chan5G[req->chan5G_cnt].tx_power = max_pwr;
 			}
 #endif
+
+			if(req->chan5G[req->chan5G_cnt].tx_power < 8){
+				pr_err("chan %d max_tx_pwr %d set_txpwr 8 \n",req->chan5G_cnt,req->chan5G[req->chan5G_cnt].tx_power);
+				req->chan5G[req->chan5G_cnt].tx_power =8;
+			}
+
 			req->chan5G_cnt++;
 			if (req->chan5G_cnt == MAC_DOMAINCHANNEL_5G_MAX)
 				break;
@@ -3407,6 +3481,7 @@ int rwnx_send_me_sta_del(struct rwnx_hw *rwnx_hw, u8 sta_idx, bool tdls_sta)
 
 int rwnx_send_me_traffic_ind(struct rwnx_hw *rwnx_hw, u8 sta_idx, bool uapsd, u8 tx_status)
 {
+#if 0
 	struct me_traffic_ind_req *req;
 
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
@@ -3424,6 +3499,8 @@ int rwnx_send_me_traffic_ind(struct rwnx_hw *rwnx_hw, u8 sta_idx, bool uapsd, u8
 
 	/* Send the ME_TRAFFIC_IND_REQ to UMAC FW */
 	return rwnx_send_msg(rwnx_hw, req, 1, ME_TRAFFIC_IND_CFM, NULL);
+#endif
+	return 0;
 }
 
 int rwnx_send_me_rc_stats(struct rwnx_hw *rwnx_hw,
@@ -3689,6 +3766,13 @@ int rwnx_send_apm_start_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *vif,
 	int var_offset = offsetof(struct ieee80211_mgmt, u.beacon.variable);
 	const u8 *var_pos;
 	int len, i;
+#ifdef CONFIG_POWER_LIMIT
+	int8_t max_pwr;
+	uint8_t r_idx;
+	txpwr_loss_conf_t txpwr_loss_tmp;
+	txpwr_loss_conf_t *txpwr_loss;
+#endif
+
 
 	RWNX_DBG(RWNX_FN_ENTRY_STR);
 
@@ -3775,6 +3859,25 @@ int rwnx_send_apm_start_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *vif,
 	else
 		req->ctrl_port_ethertype = ETH_P_PAE;
 	req->flags = flags;
+
+#ifdef CONFIG_POWER_LIMIT
+	r_idx = get_ccode_region(rwnx_hw->wiphy->regd->alpha2);
+	txpwr_loss = &txpwr_loss_tmp;
+	get_userconfig_txpwr_loss(txpwr_loss);
+	max_pwr = get_powerlimit_by_freq(req->chan.band, req->chan.freq, r_idx);
+	if (req->chan.band == PHY_BAND_2G4) {
+		if (txpwr_loss->loss_enable_2g4 == 1)
+			max_pwr -= txpwr_loss->loss_value_2g4;
+	} else if (req->chan.band == PHY_BAND_5G) {
+		if (txpwr_loss->loss_enable_5g == 1)
+			max_pwr -= txpwr_loss->loss_value_5g;
+	}
+	if (req->chan.tx_power > max_pwr) {
+		AICWFDBG(LOGDEBUG, "ccode: %s, req_pwr: %d max_pwr: %d\n",
+			rwnx_hw->wiphy->regd->alpha2, req->chan.tx_power, max_pwr);
+		req->chan.tx_power = max_pwr;
+	}
+#endif
 
 	/* Send the APM_START_REQ message to LMAC FW */
 	return rwnx_send_msg(rwnx_hw, req, 1, APM_START_CFM, cfm);
@@ -3893,7 +3996,7 @@ int rwnx_send_scanu_req(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
         req->duration = 0;
 #endif
 
-#ifdef CONFIG_RADAR_OR_IR_DETECT
+#if 1
 	if (req->ssid_cnt == 0)
 		chan_flags |= CHAN_NO_IR;
 #endif
