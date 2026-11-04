@@ -1,3 +1,11 @@
+aic8800 (5.0+git20260509.2195ae36-1) noble; urgency=medium
+
+  [ Mkirin ]
+  * feat: update to aic8800d_linux_sdk_V5.0_2026_0509_2195ae36
+  * debian: refresh patches for aic8800d_linux_sdk_V5.0_2026_0509
+
+ -- "Radxa Computer Co., Ltd" <dev@radxa.com>  Tue, 04 Nov 2026 08:18:39 +0000
+
 aic8800 (5.0+git20260123.5f7be68d-10) noble; urgency=medium
 
   [ Mecid Urganci ]
