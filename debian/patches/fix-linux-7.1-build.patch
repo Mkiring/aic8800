@@ -1,8 +1,8 @@
-diff --git a/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c b/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
-index ece06fe..6bef648 100644
+Index: b/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
+===================================================================
 --- a/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
 +++ b/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
-@@ -2453,13 +2453,21 @@ bool key_flag = false;
+@@ -2466,13 +2466,21 @@ bool key_flag = false;
   * @add_key: add a key with the given parameters. @mac_addr will be %NULL
   *	when adding a group key.
   */
@@ -25,7 +25,7 @@ index ece06fe..6bef648 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *vif = netdev_priv(netdev);
  	int i, error = 0;
-@@ -2567,7 +2575,12 @@ static int rwnx_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -2580,7 +2588,12 @@ static int rwnx_cfg80211_add_key(struct
   *	not possible to retrieve the key, -ENOENT if it doesn't exist.
   *
   */
@@ -39,7 +39,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
  																int link_id,
  #endif
-@@ -2585,13 +2598,21 @@ static int rwnx_cfg80211_get_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -2598,13 +2611,21 @@ static int rwnx_cfg80211_get_key(struct
   * @del_key: remove a key given the @mac_addr (%NULL for a group key)
   *	and @key_index, return -ENOENT if the key doesn't exist.
   */
@@ -62,7 +62,7 @@ index ece06fe..6bef648 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *vif = netdev_priv(netdev);
  	int error;
-@@ -2640,7 +2661,11 @@ static int rwnx_cfg80211_set_default_key(struct wiphy *wiphy,
+@@ -2653,7 +2674,11 @@ static int rwnx_cfg80211_set_default_key
   * @set_default_mgmt_key: set the default management frame key on an interface
   */
  static int rwnx_cfg80211_set_default_mgmt_key(struct wiphy *wiphy,
@@ -75,7 +75,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
  															int link_id,
  #endif
-@@ -2719,7 +2744,12 @@ static int rwnx_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
+@@ -2732,7 +2757,12 @@ static int rwnx_cfg80211_connect(struct
  		key_params.key_len = sme->key_len;
  		key_params.seq_len = 0;
  		key_params.cipher = sme->crypto.cipher_group;
@@ -89,7 +89,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
  									0,
  #endif
-@@ -2850,7 +2880,11 @@ static void rwnx_cfg80211_rfkill_poll(struct wiphy *wiphy)
+@@ -2863,7 +2893,11 @@ static void rwnx_cfg80211_rfkill_poll(st
   * @add_station: Add a new station.
   */
  static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
@@ -102,7 +102,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -2858,6 +2892,9 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -2871,6 +2905,9 @@ static int rwnx_cfg80211_add_station(str
  #endif
  	struct station_parameters *params)
  {
@@ -112,7 +112,7 @@ index ece06fe..6bef648 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *rwnx_vif = netdev_priv(dev);
  	struct me_sta_add_cfm me_sta_add_cfm;
-@@ -2946,7 +2983,13 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -2959,7 +2996,13 @@ static int rwnx_cfg80211_add_station(str
  			#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
  			sinfo.filled |= STATION_INFO_ASSOC_REQ_IES;
  			#endif
@@ -127,7 +127,7 @@ index ece06fe..6bef648 100644
  		}
  
  #ifdef CONFIG_BAND_STEERING
-@@ -2997,7 +3040,11 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -3010,7 +3053,11 @@ static int rwnx_cfg80211_add_station(str
   * @del_station: Remove a station
   */
  static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
@@ -140,7 +140,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac
  #elif (LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0))
-@@ -3008,6 +3055,9 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -3021,6 +3068,9 @@ static int rwnx_cfg80211_del_station_com
  
  )
  {
@@ -150,7 +150,7 @@ index ece06fe..6bef648 100644
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
      struct rwnx_vif *rwnx_vif = netdev_priv(dev);
      struct rwnx_sta *cur, *tmp;
-@@ -3063,7 +3113,13 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -3076,7 +3126,13 @@ static int rwnx_cfg80211_del_station_com
  				}
  			}
  			if (rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP || rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_GO) {
@@ -165,7 +165,7 @@ index ece06fe..6bef648 100644
  			}
  
  #ifdef AICWF_RX_REORDER
-@@ -3296,7 +3352,11 @@ void apm_probe_sta_work_process(struct work_struct *work)
+@@ -3309,7 +3365,11 @@ void apm_probe_sta_work_process(struct w
   *	cfg80211_check_station_change() to validate the information.
   */
  static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
@@ -178,7 +178,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -3304,6 +3364,9 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
+@@ -3317,6 +3377,9 @@ static int rwnx_cfg80211_change_station(
  #endif
  	struct station_parameters *params)
  {
@@ -188,7 +188,7 @@ index ece06fe..6bef648 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *vif = netdev_priv(dev);
  	struct rwnx_sta *sta;
-@@ -3645,7 +3708,13 @@ static int rwnx_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev)
+@@ -3662,7 +3725,13 @@ static int rwnx_cfg80211_stop_ap(struct
  
          /* delete any remaining STA*/
          while (!list_empty(&rwnx_vif->ap.sta_list)) {
@@ -203,7 +203,7 @@ index ece06fe..6bef648 100644
          }
  
  #ifdef CONFIG_BAND_STEERING
-@@ -4932,7 +5001,11 @@ static int rwnx_fill_station_info(struct rwnx_sta *sta, struct rwnx_vif *vif,
+@@ -4949,7 +5018,11 @@ static int rwnx_fill_station_info(struct
   * @get_station: get station information for the station identified by @mac
   */
  static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
@@ -216,7 +216,7 @@ index ece06fe..6bef648 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -4940,6 +5013,9 @@ static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
+@@ -4957,6 +5030,9 @@ static int rwnx_cfg80211_get_station(str
  #endif
  	struct station_info *sinfo)
  {
@@ -226,7 +226,7 @@ index ece06fe..6bef648 100644
  	struct rwnx_vif *vif = netdev_priv(dev);
  	struct rwnx_sta *sta = NULL;
  
-@@ -4971,9 +5047,17 @@ static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
+@@ -4988,9 +5064,17 @@ static int rwnx_cfg80211_get_station(str
  /**
   * @dump_station: dump station callback -- resume dump at index @idx
   */
@@ -245,11 +245,11 @@ index ece06fe..6bef648 100644
  	struct rwnx_vif *rwnx_vif = netdev_priv(dev);
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_sta *sta_iter, *sta = NULL;
-diff --git a/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c b/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
-index 90cfdfd..99ecb52 100644
+Index: b/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
+===================================================================
 --- a/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
 +++ b/src/PCIE/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
-@@ -115,12 +115,21 @@ rwnx_prep_tdls_direct(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
+@@ -115,12 +115,21 @@ rwnx_prep_tdls_direct(struct rwnx_hw *rw
  
  	switch (action_code) {
  	case WLAN_PUB_ACTION_TDLS_DISCOVER_RES:
@@ -271,8 +271,8 @@ index 90cfdfd..99ecb52 100644
  		break;
  	default:
  		return -EINVAL;
-diff --git a/src/SDIO/driver_fw/driver/aic8800/aic8800_btlpm/rfkill.c b/src/SDIO/driver_fw/driver/aic8800/aic8800_btlpm/rfkill.c
-index 5caf3f8..bba9619 100644
+Index: b/src/SDIO/driver_fw/driver/aic8800/aic8800_btlpm/rfkill.c
+===================================================================
 --- a/src/SDIO/driver_fw/driver/aic8800/aic8800_btlpm/rfkill.c
 +++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_btlpm/rfkill.c
 @@ -18,8 +18,11 @@
@@ -288,11 +288,11 @@ index 5caf3f8..bba9619 100644
  #include "aic_bsp_export.h"
  
  static struct rfkill *bt_rfk;
-diff --git a/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
-index 9dda0d8..35543ee 100644
+Index: b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
+===================================================================
 --- a/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
 +++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_main.c
-@@ -2290,7 +2290,12 @@ bool key_flag = false;
+@@ -2301,7 +2301,12 @@ bool key_flag = false;
   * @add_key: add a key with the given parameters. @mac_addr will be %NULL
   *	when adding a group key.
   */
@@ -306,7 +306,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
  																	 int link_id,
  #endif
-@@ -2298,6 +2303,9 @@ bool key_flag = false;
+@@ -2309,6 +2314,9 @@ bool key_flag = false;
  									 struct key_params *params)
  
  {
@@ -316,7 +316,7 @@ index 9dda0d8..35543ee 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *vif = netdev_priv(netdev);
  	int i, error = 0;
-@@ -2405,7 +2413,12 @@ bool key_flag = false;
+@@ -2416,7 +2424,12 @@ bool key_flag = false;
   *	not possible to retrieve the key, -ENOENT if it doesn't exist.
   *
   */
@@ -330,7 +330,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                                                   int link_id,
  #endif
-@@ -2423,12 +2436,20 @@ static int rwnx_cfg80211_get_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -2434,12 +2447,20 @@ static int rwnx_cfg80211_get_key(struct
   * @del_key: remove a key given the @mac_addr (%NULL for a group key)
   *	and @key_index, return -ENOENT if the key doesn't exist.
   */
@@ -352,7 +352,7 @@ index 9dda0d8..35543ee 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *vif = netdev_priv(netdev);
  	int error;
-@@ -2477,7 +2498,11 @@ static int rwnx_cfg80211_set_default_key(struct wiphy *wiphy,
+@@ -2488,7 +2509,11 @@ static int rwnx_cfg80211_set_default_key
   * @set_default_mgmt_key: set the default management frame key on an interface
   */
  static int rwnx_cfg80211_set_default_mgmt_key(struct wiphy *wiphy,
@@ -365,11 +365,11 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                                                                            int link_id,
  #endif
-@@ -2564,7 +2589,12 @@ static int rwnx_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
+@@ -2575,7 +2600,12 @@ static int rwnx_cfg80211_connect(struct
  		key_params.key_len = sme->key_len;
  		key_params.seq_len = 0;
  		key_params.cipher = sme->crypto.cipher_group;
--		rwnx_cfg80211_add_key(wiphy, dev, 
+-		rwnx_cfg80211_add_key(wiphy, dev,
 +		rwnx_cfg80211_add_key(wiphy,
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 1, 0)
 +		                      &rwnx_vif->wdev,
@@ -379,7 +379,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                  0,
  #endif
-@@ -2793,7 +2823,11 @@ static int rwnx_cfg80211_external_auth(struct wiphy *wiphy, struct net_device *d
+@@ -2804,7 +2834,11 @@ static int rwnx_cfg80211_external_auth(s
   * @add_station: Add a new station.
   */
  static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
@@ -392,7 +392,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -2801,6 +2835,9 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -2812,6 +2846,9 @@ static int rwnx_cfg80211_add_station(str
  #endif
  	struct station_parameters *params)
  {
@@ -402,7 +402,7 @@ index 9dda0d8..35543ee 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *rwnx_vif = netdev_priv(dev);
  	struct me_sta_add_cfm me_sta_add_cfm;
-@@ -2883,7 +2920,13 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -2897,7 +2934,13 @@ static int rwnx_cfg80211_add_station(str
  			#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
  			sinfo.filled |= STATION_INFO_ASSOC_REQ_IES;
  			#endif
@@ -417,7 +417,7 @@ index 9dda0d8..35543ee 100644
  		}
  
  #ifdef CONFIG_BAND_STEERING
-@@ -2933,7 +2976,11 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -2947,7 +2990,11 @@ static int rwnx_cfg80211_add_station(str
   * @del_station: Remove a station
   */
  static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
@@ -430,7 +430,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac
  #elif (LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0))
-@@ -2944,6 +2991,9 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -2958,6 +3005,9 @@ static int rwnx_cfg80211_del_station_com
  
  )
  {
@@ -440,7 +440,7 @@ index 9dda0d8..35543ee 100644
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
      struct rwnx_vif *rwnx_vif = netdev_priv(dev);
      struct rwnx_sta *cur, *tmp;
-@@ -2999,7 +3049,13 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -3013,7 +3063,13 @@ static int rwnx_cfg80211_del_station_com
  				}
  			}
  			if (rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP || rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_GO) {
@@ -455,7 +455,7 @@ index 9dda0d8..35543ee 100644
  			}
  
  #ifdef AICWF_RX_REORDER
-@@ -3212,7 +3268,11 @@ void apm_probe_sta_work_process(struct work_struct *work)
+@@ -3226,7 +3282,11 @@ void apm_probe_sta_work_process(struct w
   *	cfg80211_check_station_change() to validate the information.
   */
  static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
@@ -468,7 +468,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -3220,6 +3280,9 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy,
+@@ -3234,6 +3294,9 @@ static int rwnx_cfg80211_change_station(
  #endif
  	struct station_parameters *params)
  {
@@ -478,7 +478,7 @@ index 9dda0d8..35543ee 100644
  	struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_vif *vif = netdev_priv(dev);
  	struct rwnx_sta *sta;
-@@ -3562,7 +3625,13 @@ static int rwnx_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev)
+@@ -3580,7 +3643,13 @@ static int rwnx_cfg80211_stop_ap(struct
  
  	/* delete any remaining STA*/
  	while (!list_empty(&rwnx_vif->ap.sta_list)) {
@@ -493,7 +493,7 @@ index 9dda0d8..35543ee 100644
  	}
  
  #ifdef CONFIG_BAND_STEERING
-@@ -4877,7 +4946,11 @@ static int rwnx_fill_station_info(struct rwnx_sta *sta, struct rwnx_vif *vif,
+@@ -5066,7 +5135,11 @@ int rwnx_fill_station_info(struct rwnx_s
   * @get_station: get station information for the station identified by @mac
   */
  static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
@@ -506,7 +506,7 @@ index 9dda0d8..35543ee 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -4885,6 +4958,9 @@ static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
+@@ -5074,6 +5147,9 @@ static int rwnx_cfg80211_get_station(str
  #endif
  	struct station_info *sinfo)
  {
@@ -516,7 +516,7 @@ index 9dda0d8..35543ee 100644
  	struct rwnx_vif *vif = netdev_priv(dev);
  	struct rwnx_sta *sta = NULL;
  
-@@ -4916,9 +4992,17 @@ static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
+@@ -5105,9 +5181,17 @@ static int rwnx_cfg80211_get_station(str
  /**
   * @dump_station: dump station callback -- resume dump at index @idx
   */
@@ -535,11 +535,11 @@ index 9dda0d8..35543ee 100644
  	struct rwnx_vif *rwnx_vif = netdev_priv(dev);
  	//struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
  	struct rwnx_sta *sta_iter, *sta = NULL;
-diff --git a/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
-index 7d9afb9..cb41fdf 100644
+Index: b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
+===================================================================
 --- a/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
 +++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/rwnx_tdls.c
-@@ -115,12 +115,21 @@ rwnx_prep_tdls_direct(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
+@@ -115,12 +115,21 @@ rwnx_prep_tdls_direct(struct rwnx_hw *rw
  
  	switch (action_code) {
  	case WLAN_PUB_ACTION_TDLS_DISCOVER_RES:
@@ -561,11 +561,11 @@ index 7d9afb9..cb41fdf 100644
  		break;
  	default:
  		return -EINVAL;
-diff --git a/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_main.c b/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_main.c
-index 5079208..bc547a0 100644
+Index: b/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_main.c
+===================================================================
 --- a/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_main.c
 +++ b/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_main.c
-@@ -2941,7 +2941,12 @@ bool key_flag = false;
+@@ -2961,7 +2961,12 @@ bool key_flag = false;
   * @add_key: add a key with the given parameters. @mac_addr will be %NULL
   *	when adding a group key.
   */
@@ -579,7 +579,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                                                   int link_id,
  #endif
-@@ -2949,7 +2954,11 @@ static int rwnx_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -2969,7 +2974,11 @@ static int rwnx_cfg80211_add_key(struct
                                   struct key_params *params)
  {
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -591,7 +591,7 @@ index 5079208..bc547a0 100644
      int i, error = 0;
      struct mm_key_add_cfm key_add_cfm;
      u8_l cipher = 0;
-@@ -3056,7 +3065,12 @@ static int rwnx_cfg80211_add_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -3076,7 +3085,12 @@ static int rwnx_cfg80211_add_key(struct
   *	not possible to retrieve the key, -ENOENT if it doesn't exist.
   *
   */
@@ -605,7 +605,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                                                   int link_id,
  #endif
-@@ -3075,7 +3089,12 @@ static int rwnx_cfg80211_get_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -3095,7 +3109,12 @@ static int rwnx_cfg80211_get_key(struct
   * @del_key: remove a key given the @mac_addr (%NULL for a group key)
   *	and @key_index, return -ENOENT if the key doesn't exist.
   */
@@ -619,7 +619,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                                                   int link_id,
  #endif
-@@ -3083,7 +3102,11 @@ static int rwnx_cfg80211_del_key(struct wiphy *wiphy, struct net_device *netdev,
+@@ -3103,7 +3122,11 @@ static int rwnx_cfg80211_del_key(struct
                                   u8 key_index, bool pairwise, const u8 *mac_addr)
  {
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -631,7 +631,7 @@ index 5079208..bc547a0 100644
      int error;
      struct rwnx_sta *sta = NULL;
      struct rwnx_key *rwnx_key;
-@@ -3131,7 +3154,11 @@ static int rwnx_cfg80211_set_default_key(struct wiphy *wiphy,
+@@ -3151,7 +3174,11 @@ static int rwnx_cfg80211_set_default_key
   * @set_default_mgmt_key: set the default management frame key on an interface
   */
  static int rwnx_cfg80211_set_default_mgmt_key(struct wiphy *wiphy,
@@ -644,7 +644,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                                                   int link_id,
  #endif
-@@ -3221,7 +3248,12 @@ static int rwnx_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev,
+@@ -3241,7 +3268,12 @@ static int rwnx_cfg80211_connect(struct
          key_params.key_len = sme->key_len;
          key_params.seq_len = 0;
          key_params.cipher = sme->crypto.cipher_group;
@@ -658,7 +658,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2)
                                  0,
  #endif
-@@ -3448,7 +3480,11 @@ static int rwnx_cfg80211_external_auth(struct wiphy *wiphy, struct net_device *d
+@@ -3468,7 +3500,11 @@ static int rwnx_cfg80211_external_auth(s
   * @add_station: Add a new station.
   */
  static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
@@ -671,7 +671,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  		u8 *mac,
  #else
-@@ -3457,7 +3493,11 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -3477,7 +3513,11 @@ static int rwnx_cfg80211_add_station(str
  	struct station_parameters *params)
  {
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -683,7 +683,7 @@ index 5079208..bc547a0 100644
      struct me_sta_add_cfm me_sta_add_cfm;
      int error = 0;
  
-@@ -3548,7 +3588,13 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -3568,7 +3608,13 @@ static int rwnx_cfg80211_add_station(str
                  #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
                  sinfo.filled |= STATION_INFO_ASSOC_REQ_IES;
                  #endif
@@ -698,9 +698,9 @@ index 5079208..bc547a0 100644
              }
  
  #ifdef CONFIG_BAND_STEERING
-@@ -3573,7 +3619,13 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -3593,7 +3639,13 @@ static int rwnx_cfg80211_add_station(str
              #define PRINT_STA_FLAG(f)                               \
-                 (params->sta_flags_set & BIT(NL80211_STA_FLAG_##f) ? "["#f"]" : "")
+                 ((params->sta_flags_set & BIT(NL80211_STA_FLAG_##f)) ? "["#f"]" : "")
  
 -            netdev_info(dev, "Add sta %d (%pM) flags=%s%s%s%s%s%s%s",
 +            netdev_info(
@@ -713,7 +713,7 @@ index 5079208..bc547a0 100644
                          sta->sta_idx, mac,
                          PRINT_STA_FLAG(AUTHORIZED),
                          PRINT_STA_FLAG(SHORT_PREAMBLE),
-@@ -3599,7 +3651,11 @@ static int rwnx_cfg80211_add_station(struct wiphy *wiphy,
+@@ -3619,7 +3671,11 @@ static int rwnx_cfg80211_add_station(str
   * @del_station: Remove a station
   */
  static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
@@ -726,7 +726,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  		u8 *mac
  #elif (LINUX_VERSION_CODE < KERNEL_VERSION(3, 19, 0))
-@@ -3610,7 +3666,11 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -3630,7 +3686,11 @@ static int rwnx_cfg80211_del_station_com
  )
  {
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -738,7 +738,7 @@ index 5079208..bc547a0 100644
      struct rwnx_sta *cur, *tmp;
      int error = 0, found = 0;
  #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0)
-@@ -3650,7 +3710,13 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -3670,7 +3730,13 @@ static int rwnx_cfg80211_del_station_com
  		spin_unlock_bh(&rwnx_hw->cb_lock);
  
  		if(found) {
@@ -753,7 +753,7 @@ index 5079208..bc547a0 100644
  			if (cur->vif_idx != cur->vlan_idx) {
  				struct rwnx_vif *vlan_vif;
  				vlan_vif = rwnx_hw->vif_table[cur->vlan_idx];
-@@ -3664,7 +3730,13 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
+@@ -3684,7 +3750,13 @@ static int rwnx_cfg80211_del_station_com
  				}
  			}
              		if (rwnx_vif->wdev.iftype == NL80211_IFTYPE_AP || rwnx_vif->wdev.iftype == NL80211_IFTYPE_P2P_GO) {
@@ -768,7 +768,7 @@ index 5079208..bc547a0 100644
              		}
  
  #ifdef AICWF_RX_REORDER
-@@ -3889,7 +3961,12 @@ void apm_probe_sta_work_process(struct work_struct *work)
+@@ -3909,7 +3981,12 @@ void apm_probe_sta_work_process(struct w
   *	them, also against the existing state! Drivers must call
   *	cfg80211_check_station_change() to validate the information.
   */
@@ -782,7 +782,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -3898,7 +3975,11 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy, struct net_device *
+@@ -3918,7 +3995,11 @@ static int rwnx_cfg80211_change_station(
  	struct station_parameters *params)
  {
      struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -794,7 +794,7 @@ index 5079208..bc547a0 100644
      struct rwnx_sta *sta;
  
      sta = rwnx_get_sta(rwnx_hw, mac);
-@@ -3907,7 +3988,11 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy, struct net_device *
+@@ -3927,7 +4008,11 @@ static int rwnx_cfg80211_change_station(
          /* Add the TDLS station */
          if (params->sta_flags_set & BIT(NL80211_STA_FLAG_TDLS_PEER))
          {
@@ -807,9 +807,9 @@ index 5079208..bc547a0 100644
              struct me_sta_add_cfm me_sta_add_cfm;
              int error = 0;
  
-@@ -3978,7 +4063,13 @@ static int rwnx_cfg80211_change_station(struct wiphy *wiphy, struct net_device *
+@@ -3998,7 +4083,13 @@ static int rwnx_cfg80211_change_station(
                      #define PRINT_STA_FLAG(f)                               \
-                         (params->sta_flags_set & BIT(NL80211_STA_FLAG_##f) ? "["#f"]" : "")
+                         ((params->sta_flags_set & BIT(NL80211_STA_FLAG_##f)) ? "["#f"]" : "")
  
 -                    netdev_info(dev, "Add %s TDLS sta %d (%pM) flags=%s%s%s%s%s%s%s",
 +                    netdev_info(
@@ -822,7 +822,7 @@ index 5079208..bc547a0 100644
                                  sta->tdls.initiator ? "initiator" : "responder",
                                  sta->sta_idx, mac,
                                  PRINT_STA_FLAG(AUTHORIZED),
-@@ -4261,7 +4352,13 @@ static int rwnx_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *dev)
+@@ -4285,7 +4376,13 @@ static int rwnx_cfg80211_stop_ap(struct
  
      /* delete any remaining STA*/
      while (!list_empty(&rwnx_vif->ap.sta_list)) {
@@ -837,7 +837,7 @@ index 5079208..bc547a0 100644
      }
  
  #ifdef CONFIG_BAND_STEERING
-@@ -5885,7 +5982,11 @@ int rwnx_fill_station_info(struct rwnx_sta *sta, struct rwnx_vif *vif,
+@@ -5915,7 +6012,11 @@ int rwnx_fill_station_info(struct rwnx_s
   * @get_station: get station information for the station identified by @mac
   */
  static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
@@ -850,7 +850,7 @@ index 5079208..bc547a0 100644
  #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
  	u8 *mac,
  #else
-@@ -5893,7 +5994,11 @@ static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
+@@ -5923,7 +6024,11 @@ static int rwnx_cfg80211_get_station(str
  #endif
  	struct station_info *sinfo)
  {
@@ -862,7 +862,7 @@ index 5079208..bc547a0 100644
      struct rwnx_sta *sta = NULL;
  
      if (RWNX_VIF_TYPE(vif) == NL80211_IFTYPE_MONITOR)
-@@ -5926,10 +6031,19 @@ static int rwnx_cfg80211_get_station(struct wiphy *wiphy,
+@@ -5956,10 +6061,19 @@ static int rwnx_cfg80211_get_station(str
  /**
   * @dump_station: dump station callback -- resume dump at index @idx
   */
@@ -883,11 +883,11 @@ index 5079208..bc547a0 100644
      //struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
      struct rwnx_sta *sta_iter, *sta = NULL;
      //struct mesh_peer_info_cfm peer_info_cfm;
-diff --git a/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_tdls.c b/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_tdls.c
-index ce400ce..1759b84 100644
+Index: b/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_tdls.c
+===================================================================
 --- a/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_tdls.c
 +++ b/src/USB/driver_fw/drivers/aic8800/aic8800_fdrv/rwnx_tdls.c
-@@ -115,12 +115,21 @@ rwnx_prep_tdls_direct(struct rwnx_hw *rwnx_hw, struct rwnx_vif *rwnx_vif,
+@@ -115,12 +115,21 @@ rwnx_prep_tdls_direct(struct rwnx_hw *rw
  
      switch (action_code) {
      case WLAN_PUB_ACTION_TDLS_DISCOVER_RES:
@@ -909,5 +909,3 @@ index ce400ce..1759b84 100644
          break;
      default:
          return -EINVAL;
--- 
-2.54.0

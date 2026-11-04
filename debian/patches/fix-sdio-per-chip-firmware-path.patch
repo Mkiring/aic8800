@@ -1,5 +1,5 @@
-diff --git a/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic8800dc_compat.c b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic8800dc_compat.c
-index 64fbb01..60b9b6f 100644
+Index: b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic8800dc_compat.c
+===================================================================
 --- a/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic8800dc_compat.c
 +++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic8800dc_compat.c
 @@ -5,6 +5,7 @@
@@ -10,7 +10,7 @@ index 64fbb01..60b9b6f 100644
  
  u32 syscfg_tbl_8800dc[][2] = {
      {0x40500010, 0x00000004},
-@@ -2482,6 +2483,7 @@ int aicwf_dpd_result_write_8800dc(void *buf, int buf_len)
+@@ -2482,6 +2483,7 @@ int aicwf_dpd_result_write_8800dc(void *
      int sum = 0, len = 0;
      char *path = NULL;
      struct file *fp = NULL;
@@ -18,7 +18,7 @@ index 64fbb01..60b9b6f 100644
      loff_t pos = 0;
      mm_segment_t fs;
  
-@@ -2493,7 +2495,8 @@ int aicwf_dpd_result_write_8800dc(void *buf, int buf_len)
+@@ -2493,7 +2495,8 @@ int aicwf_dpd_result_write_8800dc(void *
          return -1;
      }
  
@@ -28,8 +28,8 @@ index 64fbb01..60b9b6f 100644
      printk("%s\n", path);
  
      fp = filp_open(path, O_RDWR | O_CREAT, 0644);
-diff --git a/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic_bsp_driver.c b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic_bsp_driver.c
-index 138c8d3..194c0c2 100644
+Index: b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic_bsp_driver.c
+===================================================================
 --- a/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic_bsp_driver.c
 +++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aic_bsp_driver.c
 @@ -34,6 +34,7 @@
@@ -38,9 +38,9 @@ index 138c8d3..194c0c2 100644
  extern char aic_fw_path[FW_PATH_MAX];
 +extern void get_fw_path(char* fw_path);
  extern struct aic_sdio_dev *aicbsp_sdiodev;
+ extern u8 chip_sub_id;
  
- static void cmd_dump(const struct rwnx_cmd *cmd)
-@@ -537,6 +538,7 @@ int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *device)
+@@ -548,6 +549,7 @@ int rwnx_load_firmware(u32 **fw_buf, con
  	void *buffer = NULL;
  	char *path = NULL;
  	struct file *fp = NULL;
@@ -48,7 +48,7 @@ index 138c8d3..194c0c2 100644
  	int size = 0, len = 0;// i = 0;
  	ssize_t rdlen = 0;
  	//u32 *src = NULL, *dst = NULL;
-@@ -561,11 +563,8 @@ int rwnx_load_firmware(u32 **fw_buf, const char *name, struct device *device)
+@@ -572,11 +574,8 @@ int rwnx_load_firmware(u32 **fw_buf, con
  		return -1;
  	}
  
@@ -62,7 +62,7 @@ index 138c8d3..194c0c2 100644
  	if (len >= AICBSP_FW_PATH_MAX) {
  		printk("%s: %s file's path too long\n", __func__, name);
  		*fw_buf = NULL;
-@@ -1093,6 +1092,7 @@ int is_file_exist(char* name)
+@@ -1104,6 +1103,7 @@ int is_file_exist(char* name)
  {
      char *path = NULL;
      struct file *fp = NULL;
@@ -70,7 +70,7 @@ index 138c8d3..194c0c2 100644
      int len;
  
      path = __getname();
-@@ -1101,7 +1101,8 @@ int is_file_exist(char* name)
+@@ -1112,7 +1112,8 @@ int is_file_exist(char* name)
          return -1;
      }
  
@@ -80,7 +80,7 @@ index 138c8d3..194c0c2 100644
  
      fp = filp_open(path, O_RDONLY, 0);
      if (IS_ERR(fp)) {
-@@ -2237,7 +2238,7 @@ int aicbsp_get_feature(struct aicbsp_feature_t *feature, char *fw_path)
+@@ -2270,7 +2271,7 @@ int aicbsp_get_feature(struct aicbsp_fea
  	feature->fwlog_en   = aicbsp_info.fwlog_en;
  	feature->irqf       = aicbsp_info.irqf;
  	if(fw_path != NULL){
@@ -89,8 +89,8 @@ index 138c8d3..194c0c2 100644
  	}
      
      sdio_dbg("%s, set FEATURE_SDIO_CLOCK %d MHz\n", __func__, feature->sdio_clock/1000000);
-diff --git a/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aicsdio.c b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aicsdio.c
-index 15e5469..c873db9 100644
+Index: b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aicsdio.c
+===================================================================
 --- a/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aicsdio.c
 +++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_bsp/aicsdio.c
 @@ -2066,11 +2066,34 @@ fail:
